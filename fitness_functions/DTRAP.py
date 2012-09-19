@@ -2,9 +2,12 @@
 #
 # BBSA Auto-Benchmark
 
-def fitness_DTRAP(individual, traplength=4):
+# data must implement .count(), which returns the number of ones
+def fitness_DTRAP(individual, config ={'traplength' : 4, 
+                                       'data'       : lambda x: x.data}):
+    traplength = config['traplength']
+    data = config['data'](individual)
     result = 0
-    data = individual.data
     trapcount = len(data) / traplength
     for trap in [data[i*traplength:(i+1)*traplength]
                  for i in xrange(trapcount)]:
@@ -14,3 +17,5 @@ def fitness_DTRAP(individual, traplength=4):
         else:
             result += (traplength - count - 1)
     return result
+
+
