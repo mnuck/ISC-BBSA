@@ -4,10 +4,11 @@
 
 import random
 
+
 ###############################################
 ### k_tournament
 ###
-### @description generate a parent pool of size n via k_tournament
+### @description select n members of a population via k-tournment
 ###
 ### Precondition:  len(population) >= n, k
 ###                k + 1 < len(population) - n
@@ -16,27 +17,23 @@ import random
 ### @param population: the population of eligibles
 ### @param n: the number of selectees required
 ### @param k: the size of each tournament
-### @param function: a function to be used by max()
+### @param fitness: a function to be used by max()
 ###                  to select the best contestant
-### @param replacement: if replacement is True, then contestants
-###                     are copied out of the population
-###                     if false, then contestants are "physically"
-###                     removed. Hence clones are not possible
+### @param replacement: if replacement is True, then individuals
+###                     can be selected more than once
 ###
-### @return a list of selectees
-###
-### @limitations: None
-###
+### @return a list of selectees of length n
 ###############################################
-def k_tournament(population, config={'fitness': lambda x: x.fitness,
-                                     'replacement': False,
-                                     'k': 1, 'n': 1}):
+def k_tournament(population,
+                 fitness=lambda x: x.fitness,
+                 replacement=False,
+                 k=1, n=1):
     my_population = population[:]
     result = list()
-    while len(result) < config['n']:
-        winner = max(random.sample(my_population, config['k']), 
-                     key=config['fitness'])
+    while len(result) < n:
+        winner = max(random.sample(my_population, k),
+                     key=fitness)
         result.append(winner)
-        if not config['replacement']:
+        if not replacement:
             my_population.remove(winner)
     return result
