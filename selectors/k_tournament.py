@@ -28,11 +28,10 @@ def k_tournament(population,
                  fitness=lambda x: x.fitness,
                  replacement=False,
                  k=1, n=1):
-    my_population = population[:]
+    my_population = population if replacement else population[:]
     result = list()
     while len(result) < n:
-        winner = max(random.sample(my_population, k),
-                     key=fitness)
+        winner = max(random.sample(my_population, k), key=fitness)
         result.append(winner)
         if not replacement:
             my_population.remove(winner)
