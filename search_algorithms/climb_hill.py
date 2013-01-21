@@ -12,21 +12,10 @@ import random
 # current must implement .get_neighbors(), which must return an iterable
 #  of items that implement .fitness
 # restart=True means if we are already at a local maxima, then we restart
-def climb_hill(current, fitness=lambda x: x.fitness,
-               wander_plateau=True, restart=False, **kwargs):
+def climb_hill(current, fitness=lambda x: x.fitness, **kwargs):
     '''Moves to the neighbor with highest fitness'''
     neighbors = current.get_neighbors()
-    if not neighbors:
-        return current
+    neighbors.append(current)
     best_fit = max([fitness(x) for x in neighbors])
-    if fitness(current) > best_fit:
-        if not restart:
-            return current
-        else:
-            return climb_hill(current.get_random(),
-                              wander_plateau=wander_plateau,
-                              restart=restart)
-    if fitness(current) == best_fit and not wander_plateau:
-        return current
-    candidates = [x for x in neighbors if fitness(x) == best_fit]
+    candidates = [n for n in neighbors if fitness(n) == best_fit]
     return random.choice(candidates)
