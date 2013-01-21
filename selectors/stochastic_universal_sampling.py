@@ -8,7 +8,8 @@ import random
 ###############################################
 ### stochastic_universal_sampling
 ###
-### @description select n members of a population
+### @description select n members of a population, with probability of
+###              selection proportional to fitness
 ###
 ### Precondition:  None
 ### Postcondition: None
@@ -25,6 +26,7 @@ import random
 def stochastic_universal_sampling(population,
                                   fitness=lambda x: x.fitness,
                                   n=1):
+    '''Selects members of a population'''
     total_fitness = sum([fitness(x) for x in population])
     spacing = total_fitness / float(n)
     choice_point = random.random() * spacing
@@ -41,4 +43,5 @@ SUS = stochastic_universal_sampling
 
 
 def fitness_proportional(population, fitness=lambda x: x.fitness):
+    '''Selects a single member of a population'''
     return SUS(population, fitness, 1)[0]
