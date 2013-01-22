@@ -7,7 +7,7 @@ from itertools import product
 from copy import deepcopy
 
 
-class nk_landscape(object):
+class fitness_nk_landscape(object):
     def __init__(self, n=8, k=1):
         k += 1  # because I'm my own neighbor
         self.n = n
