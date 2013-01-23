@@ -74,9 +74,16 @@ def get_fitnesses():
 def mate_and_die():
     global population
     population.sort(key=lambda x: x.fitness, reverse=True)
-    population = population[:5]
-    kids = [x.one_point_mutate_neighbors() for x in population]
+    kids = [x.one_point_mutate_neighbors() for x in population[:5]]
     population.extend(kids)
+    population.sort(key=lambda x: x.fitness, reverse=True)
+    population.pop()
+    population.pop()
+    population.pop()
+    population.pop()
+    population.pop()
+
+
 
 
 for i in xrange(10):
