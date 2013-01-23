@@ -47,14 +47,18 @@ class fitness_nk_landscape(object):
         return result
 
     def one_point_mutate_neighbors(self):
-        child = deepcopy(self)
-        i = random.randint(0, child.n)
+        child = fitness_nk_landscape(n=self.n, k=self.k)
+        child.neighborses = deepcopy(self.neighborses)
+        child.subfuncs = deepcopy(self.subfuncs)
+        i = random.randint(0, child.n - 1)
         r = range(child.n)
         child.neighborses[i] = [i] + random.sample(r[:i] + r[i + 1:], child.k)
         return child
 
     def one_point_mutate_subfuncs(self):
-        child = deepcopy(self)
+        child = fitness_nk_landscape(n=self.n, k=self.k)
+        child.neighborses = deepcopy(self.neighborses)
+        child.subfuncs = deepcopy(self.subfuncs)
         index = random.randint(0, len(child.subfuncs))
         key = random.choice(child.subfuncs[index].keys())
         child.subfuncs[index][key] += (random.random() - 0.5)
@@ -71,7 +75,12 @@ class fitness_nk_landscape(object):
             raise Exception("nk_landscape self.k = %i but other.k = %i!" %
                             (self.k, other.k))
         self._check_compatability(other)
-        child1, child2 = deepcopy(self), deepcopy(other)
+        child1 = fitness_nk_landscape(n=self.n, k=self.k)
+        child1.neighborses = deepcopy(self.neighborses)
+        child1.subfuncs = deepcopy(self.subfuncs)
+        child2 = fitness_nk_landscape(n=other.n, k=other.k)
+        child2.neighborses = deepcopy(other.neighborses)
+        child2.subfuncs = deepcopy(other.subfuncs)
         index = random.randint(0, len(self.neighborses))
         child1.neighborses[:index] = other.neighborses[:index]
         child2.neighborses[index:] = self.neighborses[index:]
