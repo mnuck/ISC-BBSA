@@ -46,9 +46,11 @@ population = [fitness_nk_landscape(n=length) for i in xrange(10)]
 
 
 def get_fitnesses():
+    global population
     for landscape in population:
-        if hasattr(landscape, 'fitness'):
-            print landscape.best, landscape.fitness
+        # if hasattr(landscape, 'fitness'):
+        #     print landscape.best, landscape.fitness, "cached"
+        #     continue
         best = run_search(random_search, landscape, huge_number, length)
         # print best, 'is current best'
 
@@ -74,21 +76,15 @@ def get_fitnesses():
 def mate_and_die():
     global population
     population.sort(key=lambda x: x.fitness, reverse=True)
-    kids = [x.one_point_mutate_neighbors() for x in population[:5]]
+    population = population[:5]
+    kids = [x.one_point_mutate_neighbors() for x in population]
     population.extend(kids)
-    population.sort(key=lambda x: x.fitness, reverse=True)
-    population.pop()
-    population.pop()
-    population.pop()
-    population.pop()
-    population.pop()
-
-
 
 
 for i in xrange(10):
     get_fitnesses()
     mate_and_die()
 
+get_fitnesses()
 ave = sum(x.fitness for x in population) / len(population)
 print "Average fitness:", ave
