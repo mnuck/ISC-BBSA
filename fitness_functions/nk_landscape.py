@@ -9,17 +9,15 @@ from copy import deepcopy
 
 class fitness_nk_landscape(object):
     def __init__(self, n=8, k=1):
-        k += 1  # because I'm my own neighbor
         self.n = n
         self.k = k
         self.neighborses = list()
         self.subfuncs = list()
 
+        r = range(n)
         for i in xrange(n):
-            # modify this to pick different neighbors
-            neighbors = list()
-            for j in xrange(i, min(n, i + k)):
-                    neighbors.append(j)
+            # i, and k neighbors that are not i
+            neighbors = [i] + random.sample(r[:i] + r[i + 1:], k)
             self.neighborses.append(tuple(neighbors))
 
         for neighbors in self.neighborses:
@@ -27,6 +25,19 @@ class fitness_nk_landscape(object):
             for key in product(*([xrange(2)] * len(neighbors))):
                 subfunc[key] = random.random()
             self.subfuncs.append(subfunc)
+
+    def __str__(self):
+        result = ""
+        for (i, ns, fs) in zip(xrange(self.n),
+                               self.neighborses,
+                               self.subfuncs):
+            result += "position %i with neighbors %s\n" % (i, ns)
+            for (k, v) in fs.items():
+                result += "  %s -> %s\n" % (k, v)
+        return result
+
+    def __repr__(self):
+        return self.__str__()
 
     def __call__(self, individual):
         result = 0
@@ -37,9 +48,9 @@ class fitness_nk_landscape(object):
 
     def one_point_mutate_neighbors(self):
         child = deepcopy(self)
-        neighbors = random.choice(child.neighborses)
-        index = random.randint(0, len(neighbors))
-        neighbors[index] = random.randomint(0, self.n)
+        i = random.randint(0, child.n)
+        r = range(child.n)
+        child.neighborses[i] = [i] + random.sample(r[:i] + r[i + 1:], child.k)
         return child
 
     def one_point_mutate_subfuncs(self):
