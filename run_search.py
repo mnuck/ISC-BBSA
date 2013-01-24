@@ -7,10 +7,22 @@ logformat = '%(asctime)s:%(levelname)s:%(message)s'
 loglevel = logging.WARNING
 logging.basicConfig(format=logformat, level=loglevel)
 
-
+import json
+from math import sqrt
 from search_algorithms import random_search, climb_hill
 from fitness_functions import fitness_nk_landscape
 from representations.bit_string import bit_string as individual
+
+
+def statistics(s):
+    '''min, max, mean, stddev'''
+    result = {'min': 0, 'max': 0, 'mean': 0, 'stddev': 0}
+    result['min'] = min(s)
+    result['max'] = max(s)
+    result['mean'] = sum(s) / float(len(s))
+    result['stddev'] = \
+        sqrt(sum((x - result['mean']) ** 2 for x in s) / float(len(s) - 1))
+    return result
 
 
 def run_search(search, fitness, max_evals, length):
@@ -29,62 +41,58 @@ def run_search(search, fitness, max_evals, length):
     logging.info("----------------")
     return result['best']
 
-# generate 10 random NK landscapes
-# run brute_force to ensure we know the actual optimal FIXME
-# run random_search on each of them 10 times. count then number of times
-#  random_search finds the global optima.
-# run climb_hill on each of them 10 times, count the number of times
-#  climb_hill finds the global optima.
-
-# find the ratio for each NK landscape of
-#  random_search solves / climb_hill solves + random_search_solves
-
 length = 8
 huge_number = 20000
 max_evals = 1000
-population = [fitness_nk_landscape(n=length) for i in xrange(10)]
+population = [fitness_nk_landscape(n=length) for i in xrange(12)]
 
 
 def get_fitnesses():
     global population
     for landscape in population:
-        # if hasattr(landscape, 'fitness'):
-        #     print landscape.best, landscape.fitness, "cached"
-        #     continue
+        if hasattr(landscape, 'fitness'):
+            continue
         best = run_search(random_search, landscape, huge_number, length)
-        # print best, 'is current best'
 
         result = list()
-        for i in xrange(20):
+        for i in xrange(100):
             result.append(run_search(random_search, landscape, max_evals, length))
         random_search_solves = len([x for x in result if x == best])
-        # print random_search_solves, 'solves by random_search'
 
         result = list()
-        for i in xrange(20):
+        for i in xrange(100):
             result.append(run_search(climb_hill, landscape, max_evals, length))
         climb_hill_solves = len([x for x in result if x == best])
-        # print climb_hill_solves, 'solves by climb_hill'
 
-        landscape.fitness = 1 - (climb_hill_solves / float(random_search_solves))
+        landscape.fitness = random_search_solves - climb_hill_solves
         landscape.best = best
-        print landscape.best, landscape.fitness
-    ave = sum(x.fitness for x in population) / len(population)
-    print "Average fitness:", ave
+    stats = statistics([x.fitness for x in population])
+    print json.dumps(stats)
 
 
 def mate_and_die():
     global population
     population.sort(key=lambda x: x.fitness, reverse=True)
-    population = population[:5]
-    kids = [x.one_point_mutate_neighbors() for x in population]
+    population = population[:6]
+    kids1 = population[0].one_point_crossover(population[1])
+    kids2 = population[2].one_point_crossover(population[3])
+    kids3 = population[5].one_point_crossover(population[5])
+    kids = [x.one_point_mutate() for x in kids1 + kids2 + kids3]
     population.extend(kids)
 
 
-for i in xrange(10):
-    get_fitnesses()
-    mate_and_die()
+def main():
+    for i in xrange(20):
+        get_fitnesses()
+        mate_and_die()
 
-get_fitnesses()
-ave = sum(x.fitness for x in population) / len(population)
-print "Average fitness:", ave
+    get_fitnesses()
+    stats = statistics([x.fitness for x in population])
+    print json.dumps(stats)
+
+
+# if __name__ == "__main__":
+#     main()
+
+import cProfile
+cProfile.run('main()', 'profiling.prof')
