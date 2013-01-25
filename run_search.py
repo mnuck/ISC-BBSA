@@ -55,12 +55,12 @@ def get_fitnesses():
         best = run_search(random_search, landscape, huge_number, length)
 
         result = list()
-        for i in xrange(100):
+        for i in xrange(3):
             result.append(run_search(random_search, landscape, max_evals, length))
         random_search_solves = len([x for x in result if x == best])
 
         result = list()
-        for i in xrange(100):
+        for i in xrange(3):
             result.append(run_search(climb_hill, landscape, max_evals, length))
         climb_hill_solves = len([x for x in result if x == best])
 
