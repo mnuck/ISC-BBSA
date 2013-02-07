@@ -42,13 +42,13 @@ class bit_string(object):
 
     def one_point_mutate(self):
         child = bit_string(self.data)
-        index = random.randint(0, len(child.data))
+        index = random.randint(0, len(child.data) - 1)
         child[index] ^= 1
         return child
 
     def one_point_crossover(self, other):
         child1, child2 = bit_string(self.data), bit_string(other.data)
-        index = random.randint(0, len(self.data))
+        index = random.randint(0, len(self.data) - 1)
         child1[:index] = other.data[:index]
-        child2[index:] = self.data
+        child2[index:] = self.data[index:]
         return child1, child2
