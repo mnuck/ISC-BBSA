@@ -64,6 +64,9 @@ class fitness_nk_landscape(object):
         if cudaEnabled:
             self.cuda_fitness = generate_cuda_fitness(self.neighborses,
                                                       self.subfuncs)
+            self.bulk_fitness = self.cuda_fitness
+        else:
+            self.bulk_fitness = lambda s: [self.__call__(x) for x in s]
 
     def clone(self, clone_cubin=False):
         "makes a new fitness_nk_landscape from an old one"
@@ -90,16 +93,13 @@ class fitness_nk_landscape(object):
 
     def __call__(self, individual):
         "evaluate the fitness of individual in this NK landscape"
-        # if individual in self.cache:
-        #     return self.cache[individual]
-        # if hasattr(individual, '__fitness'):
-        #     return individual.__fitness
+        if hasattr(individual, 'fitness'):
+            return individual.fitness
         result = 0
         for neighbors, subfunc in zip(self.neighborses, self.subfuncs):
             key = tuple(individual[i] for i in neighbors)
             result += subfunc[key]
-        # self.cache[individual] = result
-        # individual.__fitness = result
+        individual.fitness = result
         return result
 
     def one_point_mutate_neighbors(self):

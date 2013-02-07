@@ -15,6 +15,7 @@ nk_fitness = nk.fitness_nk_landscape
 nk.cudaEnabled = False
 
 from search_algorithms.mu_lambda_ea import make_solver
+from search_algorithms.mu_lambda_ea import make_default_child_maker
 
 from selectors import make_k_tournament, make_SUS
 
@@ -40,8 +41,7 @@ def population_maker():
     return [starter.get_random(genome_length) for i in xrange(mu)]
 
 
-def main():
-    fits = [nk_fitness(n=genome_length) for i in xrange(1)]
+def fit_fits(fits):
     for fit in fits:
         ea1 = make_solver(make_initial_population=population_maker,
                           survival_selector=make_SUS(fitness=fit, n=mu),
@@ -55,17 +55,42 @@ def main():
                                                             replacement=True,
                                                             k=2, n=lam),
                           fitness=fit)
-        result_pops = [ea1() for i in xrange(3)]
+        result_pops = [ea1() for i in xrange(10)]
         result_fits = [[fit(x) for x in y] for y in result_pops]
         result_stats = [statistics(x)['max'] for x in result_fits]
-        print result_stats
+        a = statistics(result_stats)['mean']
 
-        result_pops = [ea2() for i in xrange(3)]
+        result_pops = [ea2() for i in xrange(10)]
         result_fits = [[fit(x) for x in y] for y in result_pops]
         result_stats = [statistics(x)['max'] for x in result_fits]
-        print result_stats
+        b = statistics(result_stats)['mean']
+
+        fit.fitness = 10 + a - b
 
 
+def initial_fits():
+    return [nk_fitness(n=genome_length) for i in xrange(20)]
+
+
+def main():
+    fits = initial_fits()
+    fit_fits(fits)
+
+    survival_selector = make_SUS(fitness=lambda x: x.fitness, n=20)
+    parent_selector = make_SUS(fitness=lambda x: x.fitness, n=5)
+    # survival_selector = make_k_tournament(fitness=lambda x: x.fitness,
+    #                                       replacement=True, k=2, n=20)
+    # parent_selector = make_k_tournament(fitness=lambda x: x.fitness,
+    #                                     replacement=True, k=2, n=5)
+    child_maker = make_default_child_maker(mutation_rate=0.2)
+
+    while True:
+        print statistics([x.fitness for x in fits])
+        parents = parent_selector(fits)
+        children = child_maker(parents)
+        fit_fits(children)
+        fits.extend(children)
+        fits = survival_selector(fits)
 
 
 # if __name__ == "__main__":
