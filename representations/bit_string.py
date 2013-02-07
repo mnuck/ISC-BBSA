@@ -25,6 +25,9 @@ class bit_string(object):
     def __repr__(self):
         return self.__str__()
 
+    def __hash__(self):
+        return self.data.to01().__hash__()
+
     def get_neighbors(self):
         result = list()
         for i in xrange(len(self.data)):
