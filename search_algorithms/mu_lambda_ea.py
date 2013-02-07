@@ -4,54 +4,34 @@
 
 import random
 
-from representation import bit_string
+
+def make_initial_state():
+    return {'evals': 0, 'max_evals': 1000}
 
 
-def mu_lambda_ea(random_individual=default_individual_maker,
-                 terminate=default_terminator,
-                 survival_selector=default_survival_selector,
-                 parent_selector=default_reproduction_selector,
-                 mu=10, lam=5):
-    state = dict()
-    population = [random_individual() for x in xrange(mu)]
-    while not terminate(state):
-        population = cycle(population)
-    return population
-
-mu = 10
-lam = 5
-mutation_rate = 0.1
-
-crossover = make_crossover()
-mutator = make_mutator(mutation_rate)
-selector = k_tournament
-child_maker = make_child_maker(crossover, mutator, selector, lam)
-survivor_picker = make_survivor_picker(truncate, mu)
-
-cycle = make_cycle(child_maker, survivor_picker)
-terminate = make_terminator()
+def default_terminator(state):
+    return state['evals'] > state['max_evals']
 
 
-
-def make_terminator():
-    def terminator(state):
-        pass
-    return terminator
-
-
-def make_cycle(child_maker, survivor_picker):
-    def cycle(population):
-        population.extend(child_maker(population))
-        population = survivor_picker(population)
-        return population
+def make_cycle(child_maker, parent_selector, survivor_selector):
+    def cycle(population, state):
+        parents = parent_selector(population)
+        children = child_maker(parents)
+        population.extend(children)
+        state['evals'] += len(children)
+        population = survivor_selector(population)
+        return population, state
     return cycle
 
 
-def make_child_maker(crossover, mutator, selector, n):
-    def child_maker(population):
+def make_default_child_maker(mutation_rate=0):
+    crossover = make_default_crossover()
+    mutator = make_mutator(mutation_rate)
+    def child_maker(parents):
         children = list()
-        while len(children) < n:
-            children.extend(crossover(selector(population, n=2)))
+        i = 0
+        while len(children) < len(parents):
+            children.extend(crossover(*random.sample(parents, 2)))
         return [mutator(child) for child in children]
     return child_maker
 
@@ -65,18 +45,27 @@ def make_mutator(mutation_rate, mutation=lambda x: x.one_point_mutate()):
     return mutator
 
 
-def make_crossover(crosser=lambda x, y: x.one_point_crossover(y)):
+def make_default_crossover(crosser=lambda x, y: x.one_point_crossover(y)):
     def crossover(p1, p2):
         return crosser(p1, p2)
     return crossover
 
 
-def make_survivor_picker(selector, n):
-    def survivor_picker(population):
-        return selector(population, n)
-    return survivor_picker
+def make_solver(make_initial_population,
+                survival_selector,
+                parent_selector,
+                child_maker=None,
+                terminate=default_terminator):
+    if child_maker is None:
+        child_maker = make_default_child_maker() 
+    cycle = make_cycle(child_maker, parent_selector, survival_selector)
 
-
-def default_individual_maker():
-    starter = bit_string()
-    return starter.get_random(5)
+    def mu_lambda_ea():
+        state = make_initial_state()
+        population = make_initial_population()
+        while not terminate(state):
+            population, state = cycle(population, state)
+            print "loopin", state, len(population)
+        print "dun"
+        return population
+    return mu_lambda_ea

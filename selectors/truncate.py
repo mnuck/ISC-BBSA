@@ -22,3 +22,9 @@ def truncate(population,
              fitness=lambda x: x.fitness,
              n=1):
     return sorted(population, key=fitness)[:n]
+
+
+def make_truncator(fitness=lambda x: x.fitness, n=1):
+	def f(population):
+		return sorted(population, key=fitness)[:n]
+	return f

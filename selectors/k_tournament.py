@@ -36,3 +36,18 @@ def k_tournament(population,
         if not replacement:
             my_population.remove(winner)
     return result
+
+
+def make_k_tournament(fitness=lambda x: x.fitness,
+                      replacement=False,
+                      k=1, n=1):
+    def f(population):
+        my_population = population if replacement else population[:]
+        result = list()
+        while len(result) < n:
+            winner = max(random.sample(my_population, k), key=fitness)
+            result.append(winner)
+            if not replacement:
+                my_population.remove(winner)
+        return result
+    return f

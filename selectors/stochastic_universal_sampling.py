@@ -45,3 +45,19 @@ SUS = stochastic_universal_sampling
 def fitness_proportional(population, fitness=lambda x: x.fitness):
     '''Selects a single member of a population'''
     return SUS(population, fitness, 1)[0]
+
+
+def make_SUS(fitness=lambda x: x.fitness, n=1):
+    def f(population):
+        total_fitness = sum([fitness(x) for x in population])
+        spacing = total_fitness / float(n)
+        choice_point = random.random() * spacing
+        accumulated_fitness = 0
+        result = list()
+        for individual in population:
+            accumulated_fitness += fitness(individual)
+            while choice_point < accumulated_fitness:
+                result.append(individual)
+                choice_point += spacing
+        return result
+    return f
