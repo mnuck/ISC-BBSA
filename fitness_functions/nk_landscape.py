@@ -92,11 +92,14 @@ class fitness_nk_landscape(object):
         "evaluate the fitness of individual in this NK landscape"
         # if individual in self.cache:
         #     return self.cache[individual]
+        # if hasattr(individual, '__fitness'):
+        #     return individual.__fitness
         result = 0
         for neighbors, subfunc in zip(self.neighborses, self.subfuncs):
             key = tuple(individual[i] for i in neighbors)
             result += subfunc[key]
         # self.cache[individual] = result
+        # individual.__fitness = result
         return result
 
     def one_point_mutate_neighbors(self):
