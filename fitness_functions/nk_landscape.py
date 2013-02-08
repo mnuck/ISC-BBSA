@@ -2,6 +2,7 @@
 #
 # BBSA Auto-Benchmark
 
+import cPickle
 import random
 from itertools import product, chain
 from copy import deepcopy
@@ -47,7 +48,6 @@ class fitness_nk_landscape(object):
         self.k = k
         self.neighborses = list()
         self.subfuncs = list()
-        self.cache = dict()
 
         r = range(n)
         for i in xrange(n):
@@ -101,6 +101,24 @@ class fitness_nk_landscape(object):
             result += subfunc[key]
         individual.fitness = result
         return result
+
+    def dumps(self):
+        payload = {'n': self.n,
+                   'k': self.k,
+                   'neighborses': self.neighborses,
+                   'subfuncs': self.subfuncs}
+        if hasattr(self, 'fitness'):
+            payload.update({'fitness': self.fitness})
+        return cPickle.dumps(payload)
+
+    def loads(self, s):
+        payload = cPickle.loads(s)
+        self.k = payload['k']
+        self.n = payload['n']
+        self.neighborses = payload['neighborses']
+        self.subfuncs = payload['subfuncs']
+        if 'fitness' in payload:
+            self.fitness = payload['fitness']
 
     def one_point_mutate_neighbors(self):
         "mutates just the identity of the k neighbors at a single location"

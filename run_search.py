@@ -41,31 +41,40 @@ def population_maker():
     return [starter.get_random(genome_length) for i in xrange(mu)]
 
 
+def fit_one_fit(fit):
+    ea1 = make_solver(make_initial_population=population_maker,
+                      survival_selector=make_SUS(fitness=fit, n=mu),
+                      parent_selector=make_SUS(fitness=fit, n=lam),
+                      fitness=fit)
+    ea2 = make_solver(make_initial_population=population_maker,
+                      survival_selector=make_k_tournament(fitness=fit,
+                                                          replacement=True,
+                                                          k=2, n=mu),
+                      parent_selector=make_k_tournament(fitness=fit,
+                                                        replacement=True,
+                                                        k=2, n=lam),
+                      fitness=fit)
+    result_pops = [ea1() for i in xrange(10)]
+    result_fits = [[fit(x) for x in y] for y in result_pops]
+    result_stats = [statistics(x)['max'] for x in result_fits]
+    a = statistics(result_stats)['mean']
+
+    result_pops = [ea2() for i in xrange(10)]
+    result_fits = [[fit(x) for x in y] for y in result_pops]
+    result_stats = [statistics(x)['max'] for x in result_fits]
+    b = statistics(result_stats)['mean']
+
+    return 10 + a - b
+
+
 def fit_fits(fits):
     for fit in fits:
-        ea1 = make_solver(make_initial_population=population_maker,
-                          survival_selector=make_SUS(fitness=fit, n=mu),
-                          parent_selector=make_SUS(fitness=fit, n=lam),
-                          fitness=fit)
-        ea2 = make_solver(make_initial_population=population_maker,
-                          survival_selector=make_k_tournament(fitness=fit,
-                                                              replacement=True,
-                                                              k=2, n=mu),
-                          parent_selector=make_k_tournament(fitness=fit,
-                                                            replacement=True,
-                                                            k=2, n=lam),
-                          fitness=fit)
-        result_pops = [ea1() for i in xrange(10)]
-        result_fits = [[fit(x) for x in y] for y in result_pops]
-        result_stats = [statistics(x)['max'] for x in result_fits]
-        a = statistics(result_stats)['mean']
-
-        result_pops = [ea2() for i in xrange(10)]
-        result_fits = [[fit(x) for x in y] for y in result_pops]
-        result_stats = [statistics(x)['max'] for x in result_fits]
-        b = statistics(result_stats)['mean']
-
-        fit.fitness = 10 + a - b
+        s = fit.dumps()
+        # dump s into a queue
+        x = nk_fitness()
+        x.loads(s)
+        fit.fitness = fit_one_fit(x)
+        # fit.fitness = fit_one_fit(fit)
 
 
 def initial_fits():
@@ -78,10 +87,6 @@ def main():
 
     survival_selector = make_SUS(fitness=lambda x: x.fitness, n=20)
     parent_selector = make_SUS(fitness=lambda x: x.fitness, n=5)
-    # survival_selector = make_k_tournament(fitness=lambda x: x.fitness,
-    #                                       replacement=True, k=2, n=20)
-    # parent_selector = make_k_tournament(fitness=lambda x: x.fitness,
-    #                                     replacement=True, k=2, n=5)
     child_maker = make_default_child_maker(mutation_rate=0.2)
 
     while True:
