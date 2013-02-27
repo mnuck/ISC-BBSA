@@ -17,6 +17,8 @@ nk.cudaEnabled = False
 from search_algorithms.mu_lambda_ea import make_solver
 from search_algorithms.mu_lambda_ea import make_default_child_maker
 
+from search_algorithms.simulated_annealing import make_SA_solver
+
 from selectors import make_k_tournament, make_SUS
 
 
@@ -41,6 +43,11 @@ def population_maker():
     return [starter.get_random(genome_length) for i in xrange(mu)]
 
 
+def initial_solution_maker():
+    starter = bit_string()
+    return starter.get_random(genome_length)
+
+
 def fit_one_fit(fit):
     ea1 = make_solver(make_initial_population=population_maker,
                       survival_selector=make_SUS(fitness=fit, n=mu),
@@ -54,17 +61,29 @@ def fit_one_fit(fit):
                                                         replacement=True,
                                                         k=2, n=lam),
                       fitness=fit)
+
+    sa = make_SA_solver(evals=1000,
+                        initial_solution_maker=initial_solution_maker,
+                        fitness=fit)
+
+    results = [sa() for i in xrange(10)]
+    result_fits = [fit(x) for x in results]
+    # print "SA", result_fits
+    b = statistics(result_fits)['mean']
+
     result_pops = [ea1() for i in xrange(10)]
     result_fits = [[fit(x) for x in y] for y in result_pops]
     result_stats = [statistics(x)['max'] for x in result_fits]
+    # print "EA", result_stats
     a = statistics(result_stats)['mean']
 
-    result_pops = [ea2() for i in xrange(10)]
-    result_fits = [[fit(x) for x in y] for y in result_pops]
-    result_stats = [statistics(x)['max'] for x in result_fits]
-    b = statistics(result_stats)['mean']
+    # result_pops = [ea2() for i in xrange(10)]
+    # result_fits = [[fit(x) for x in y] for y in result_pops]
+    # result_stats = [statistics(x)['max'] for x in result_fits]
+    # b = statistics(result_stats)['mean']
 
-    return 10 + a - b
+
+    return 20 + b - a
 
 
 def fit_fits(fits):

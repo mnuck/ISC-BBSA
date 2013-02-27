@@ -78,6 +78,5 @@ def make_solver(make_initial_population,
         population = make_initial_population()
         while not terminate(state):
             population, state = cycle(population, state)
-            print state
         return population
     return mu_lambda_ea
