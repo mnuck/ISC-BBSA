@@ -13,9 +13,8 @@ def groupn(l, n):
 
 
 class fitness_DTRAP(object):
-    def __init__(self, n=8, k=4, random_trap=False):
+    def __init__(self, k=4, random_trap=False):
         "constructor"
-        self.n = n
         self.k = k
         if not random_trap:
             self.lookup = range(k - 1, -1, -1) + [k]
@@ -60,17 +59,56 @@ class fitness_DTRAP(object):
         return child1, child2
 
 
-# data must implement .count(), which returns the number of ones
-def fitness_DTRAP_old(individual, traplength=4,
-                      data=lambda x: x.data, **kwargs):
-    data = data(individual)
-    result = 0
-    trapcount = len(data) / traplength
-    for trap in [data[i * traplength:(i + 1) * traplength]
-                 for i in xrange(trapcount)]:
-        count = trap.count()
-        if count == traplength:
-            result += traplength
+class fitness_DTRAP_Reece(object):
+    def __init__(self, a=1, b=4, k=4, random_trap=False):
+        "constructor"
+        self.a = a
+        self.b = b
+        self.k = k
+
+    def clone(self):
+        "makes a new DTRAP from an existing one"
+        return fitness_DTRAP_Reece(self.a, self.b, self.k)
+
+    def __str__(self):
+        "a human-readable representation of this DTRAP"
+        return "a=%i, b=%i, k=%i" % (self.a, self.b, self.k)
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __call__(self, individual):
+        "evaluate the fitness of individual in this DTRAP"
+        result = 0
+        for trap in [bitarray(x) for x in groupn(individual, self.k)]:
+            result += self.__process_fitness(trap.count())
+        return result
+
+    def __process_fitness(self, u):
+        "determine the fitness of this input in the context of this DTRAP"
+        z = float(self.k - 1)
+        if u <= z:
+            result = self.a / z * (z - u)
         else:
-            result += (traplength - count - 1)
-    return result
+            result = self.b / (self.k - z) * (u - z)
+        return result
+
+    def one_point_mutate(self):
+        "mutates one thing, random.choice([a, b, k])"
+        child = self.clone()
+        x = int(round(random.gauss(0, 1)))
+        results = [(child.a, child.b, child.k + x),
+                   (child.a, child.b + x, child.k),
+                   (child.a + x, child.b, child.k)]
+        child.a, child.b, child.c = random.choice(results)
+        return child
+
+    def one_point_crossover(self, other):
+        "performs one point crossover on self and other, returns 2 children"
+        child1 = self.clone()
+        child2 = other.clone()
+        for attribute in ['a', 'b', 'k']:
+            if random.random() < 0.5:
+                child1.__setattr__(attribute, other.__getattr__(attribute))
+                child2.__setattr__(attribute, self.__getattr__(attribute))
+        return child1, child2
