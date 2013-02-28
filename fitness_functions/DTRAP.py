@@ -13,7 +13,7 @@ def groupn(l, n):
 
 
 class fitness_DTRAP(object):
-    def __init__(self, k=4, random_trap=False):
+    def __init__(self, k=4, random_trap=False, **kwargs):
         "constructor"
         self.k = k
         if not random_trap:
@@ -60,7 +60,7 @@ class fitness_DTRAP(object):
 
 
 class fitness_DTRAP_Reece(object):
-    def __init__(self, a=1, b=4, k=4, random_trap=False):
+    def __init__(self, a=1, b=4, k=4, random_trap=False, **kwargs):
         "constructor"
         self.a = a
         self.b = b
