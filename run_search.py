@@ -10,9 +10,10 @@ logging.basicConfig(format=logformat, level=loglevel)
 from math import sqrt
 from representations.bit_string import bit_string
 
-import fitness_functions.nk_landscape as nk
-nk_fitness = nk.fitness_nk_landscape
-nk.cudaEnabled = False
+# import fitness_functions.nk_landscape as nk
+# nk_fitness = nk.fitness_nk_landscape
+# nk.cudaEnabled = False
+from fitness_functions.DTRAP import fitness_DTRAP as dtrap
 
 from search_algorithms.mu_lambda_ea import make_solver
 from search_algorithms.mu_lambda_ea import make_default_child_maker
@@ -53,14 +54,14 @@ def fit_one_fit(fit):
                       survival_selector=make_SUS(fitness=fit, n=mu),
                       parent_selector=make_SUS(fitness=fit, n=lam),
                       fitness=fit)
-    ea2 = make_solver(make_initial_population=population_maker,
-                      survival_selector=make_k_tournament(fitness=fit,
-                                                          replacement=True,
-                                                          k=2, n=mu),
-                      parent_selector=make_k_tournament(fitness=fit,
-                                                        replacement=True,
-                                                        k=2, n=lam),
-                      fitness=fit)
+    # ea2 = make_solver(make_initial_population=population_maker,
+    #                   survival_selector=make_k_tournament(fitness=fit,
+    #                                                       replacement=True,
+    #                                                       k=2, n=mu),
+    #                   parent_selector=make_k_tournament(fitness=fit,
+    #                                                     replacement=True,
+    #                                                     k=2, n=lam),
+    #                   fitness=fit)
 
     sa = make_SA_solver(evals=1000,
                         initial_solution_maker=initial_solution_maker,
@@ -68,13 +69,13 @@ def fit_one_fit(fit):
 
     results = [sa() for i in xrange(10)]
     result_fits = [fit(x) for x in results]
-    # print "SA", result_fits
+    #print "SA", statistics(result_fits)
     b = statistics(result_fits)['mean']
 
     result_pops = [ea1() for i in xrange(10)]
     result_fits = [[fit(x) for x in y] for y in result_pops]
     result_stats = [statistics(x)['max'] for x in result_fits]
-    # print "EA", result_stats
+    #print "EA", statistics(result_stats)
     a = statistics(result_stats)['mean']
 
     # result_pops = [ea2() for i in xrange(10)]
@@ -82,22 +83,22 @@ def fit_one_fit(fit):
     # result_stats = [statistics(x)['max'] for x in result_fits]
     # b = statistics(result_stats)['mean']
 
-
-    return 20 + b - a
+    return 50 + b - a
 
 
 def fit_fits(fits):
     for fit in fits:
-        s = fit.dumps()
-        # dump s into a queue
-        x = nk_fitness()
-        x.loads(s)
-        fit.fitness = fit_one_fit(x)
+        # s = fit.dumps()
+        # # dump s into a queue
+        # x = nk_fitness()
+        # x.loads(s)
+        fit.fitness = fit_one_fit(fit)
         # fit.fitness = fit_one_fit(fit)
 
 
 def initial_fits():
-    return [nk_fitness(n=genome_length) for i in xrange(20)]
+    return [dtrap(n=genome_length, k=4, random_trap=True)
+            for i in xrange(20)]
 
 
 def main():

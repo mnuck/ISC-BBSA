@@ -22,8 +22,8 @@ import random
 ### @return the state picked by simulated annealing
 ###############################################
 def simulated_annealing(current,
-                       fitness=lambda x: x.fitness,
-                       temp=lambda: 0):
+                        fitness=lambda x: x.fitness,
+                        temp=lambda: 0):
     '''Climbs hills, but sometimes is willing to go downhill'''
     neighbor = random.choice(current.get_neighbors())
     if fitness(current) > fitness(neighbor):
@@ -36,7 +36,7 @@ def simulated_annealing(current,
         result = worse
     return result
 
-SA=simulated_annealing
+SA = simulated_annealing
 
 
 def linear_decrease(starting_temp=1.0, max_time=10000):
