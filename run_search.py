@@ -110,7 +110,10 @@ def main():
     child_maker = make_default_child_maker(mutation_rate=0.2)
 
     while True:
-        print statistics([x.fitness for x in fits])
+        stats = statistics([x.fitness for x in fits])
+	best = max(fits, key=lambda x: x.fitness)
+        print stats
+	print best
         parents = parent_selector(fits)
         children = child_maker(parents)
         fit_fits(children)
