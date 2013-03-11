@@ -7,7 +7,8 @@ logformat = '%(asctime)s:%(levelname)s:%(message)s'
 loglevel = logging.WARNING
 logging.basicConfig(format=logformat, level=loglevel)
 
-from math import sqrt
+from utility import statistics
+
 from representations.bit_string import bit_string
 
 # import fitness_functions.nk_landscape as nk
@@ -23,15 +24,6 @@ from search_algorithms.simulated_annealing import make_SA_solver
 from selectors import make_k_tournament, make_SUS
 
 
-def statistics(s):
-    '''min, max, mean, stddev'''
-    result = {'min': 0, 'max': 0, 'mean': 0, 'stddev': 0}
-    result['min'] = min(s)
-    result['max'] = max(s)
-    result['mean'] = sum(s) / float(len(s))
-    result['stddev'] = \
-        sqrt(sum((x - result['mean']) ** 2 for x in s) / float(len(s) - 1))
-    return result
 
 
 genome_length = 100
