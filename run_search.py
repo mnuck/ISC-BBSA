@@ -13,7 +13,7 @@ from representations.bit_string import bit_string
 # import fitness_functions.nk_landscape as nk
 # nk_fitness = nk.fitness_nk_landscape
 # nk.cudaEnabled = False
-from fitness_functions.DTRAP import fitness_DTRAP as dtrap
+from fitness_functions.DTRAP import fitness_DTRAP_Reece as dtrap
 
 from search_algorithms.mu_lambda_ea import make_solver
 from search_algorithms.mu_lambda_ea import make_default_child_maker
@@ -119,6 +119,7 @@ def main():
         fit_fits(children)
         fits.extend(children)
         fits = survival_selector(fits)
+        print "poplength = ", len(fits)
 
 
 # if __name__ == "__main__":
