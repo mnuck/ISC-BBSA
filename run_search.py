@@ -11,107 +11,84 @@ from utility import statistics
 
 from representations.bit_string import bit_string
 
-# import fitness_functions.nk_landscape as nk
-# nk_fitness = nk.fitness_nk_landscape
-# nk.cudaEnabled = False
 from fitness_functions.DTRAP import fitness_DTRAP_Reece as dtrap
 
-from search_algorithms.mu_lambda_ea import make_solver
+from search_algorithms.mu_lambda_ea import make_solver as make_EA
 from search_algorithms.mu_lambda_ea import make_default_child_maker
+from search_algorithms.simulated_annealing import make_SA_solver as make_SA
 
-from search_algorithms.simulated_annealing import make_SA_solver
-
-from selectors import make_k_tournament, make_SUS
-
-
+from selectors import make_SUS
 
 
 genome_length = 100
-mu = 100
-lam = 10
+ea_mu = 100
+ea_lam = 10
+
+fit_mu = 20
+fit_traplength = 4
 
 
-def population_maker():
-    starter = bit_string()
-    return [starter.get_random(genome_length) for i in xrange(mu)]
+def initial_fits():
+    '''initial population of fitnesses'''
+    return [dtrap(n=genome_length, k=fit_traplength, random_trap=True)
+            for i in xrange(fit_mu)]
 
 
-def initial_solution_maker():
+def random_solution_maker():
+    '''for single-solution algorithms'''
     starter = bit_string()
     return starter.get_random(genome_length)
 
 
-def fit_one_fit(fit):
-    ea1 = make_solver(make_initial_population=population_maker,
-                      survival_selector=make_SUS(fitness=fit, n=mu),
-                      parent_selector=make_SUS(fitness=fit, n=lam),
-                      fitness=fit)
-    # ea2 = make_solver(make_initial_population=population_maker,
-    #                   survival_selector=make_k_tournament(fitness=fit,
-    #                                                       replacement=True,
-    #                                                       k=2, n=mu),
-    #                   parent_selector=make_k_tournament(fitness=fit,
-    #                                                     replacement=True,
-    #                                                     k=2, n=lam),
-    #                   fitness=fit)
-
-    sa = make_SA_solver(evals=1000,
-                        initial_solution_maker=initial_solution_maker,
-                        fitness=fit)
-
-    results = [sa() for i in xrange(10)]
-    result_fits = [fit(x) for x in results]
-    #print "SA", statistics(result_fits)
-    b = statistics(result_fits)['mean']
-
-    result_pops = [ea1() for i in xrange(10)]
-    result_fits = [[fit(x) for x in y] for y in result_pops]
-    result_stats = [statistics(x)['max'] for x in result_fits]
-    #print "EA", statistics(result_stats)
-    a = statistics(result_stats)['mean']
-
-    # result_pops = [ea2() for i in xrange(10)]
-    # result_fits = [[fit(x) for x in y] for y in result_pops]
-    # result_stats = [statistics(x)['max'] for x in result_fits]
-    # b = statistics(result_stats)['mean']
-
-    return 50 + b - a
+def population_maker():
+    '''for population-based algorithms'''
+    return [random_solution_maker() for i in xrange(ea_mu)]
 
 
-def fit_fits(fits):
-    for fit in fits:
-        # s = fit.dumps()
-        # # dump s into a queue
-        # x = nk_fitness()
-        # x.loads(s)
-        fit.fitness = fit_one_fit(fit)
-        # fit.fitness = fit_one_fit(fit)
+def wrapped_make_EA(evals, fitness):
+    '''Adapter design pattern'''
+    return make_EA(make_initial_population=population_maker,
+                   survival_selector=make_SUS(fitness=fitness, n=ea_mu),
+                   parent_selector=make_SUS(fitness=fitness, n=ea_lam),
+                   fitness=fitness)
 
 
-def initial_fits():
-    return [dtrap(n=genome_length, k=4, random_trap=True)
-            for i in xrange(20)]
+def wrapped_make_SA(evals, fitness):
+    '''Adapter design pattern'''
+    return make_SA(evals=evals,
+                   initial_solution_maker=random_solution_maker,
+                   fitness=fitness)
+
+
+def get_performance(fitness_function, search_maker, n=30, evals=10000):
+    '''run search against fitness_function n times, allowing evals
+    fitness evaluations per run. return a list corresponding to the
+    fitness value of the best solution found per run'''
+    search = search_maker(evals=evals, fitness=fitness_function)
+    results = [search() for _ in xrange(n)]
+    result_fits = [fitness_function(x) for x in results]
+    return statistics(result_fits)
+
+
+def fit_fit(fitness_function, makers, index):
+    '''index is the index of the algorithm that is supposed to win'''
+    performs = [get_performance(fitness_function, sa)
+                for sa in makers]
+    performs = [x['mean'] for x in performs]
+    diffs = [x - performs[index]
+             for x in performs[:index] + performs[index + 1:]]
+    diffs = [x + 20 for x in diffs]
+    return min(diffs)
 
 
 def main():
     fits = initial_fits()
-    fit_fits(fits)
-
-    survival_selector = make_SUS(fitness=lambda x: x.fitness, n=20)
-    parent_selector = make_SUS(fitness=lambda x: x.fitness, n=5)
-    child_maker = make_default_child_maker(mutation_rate=0.2)
-
-    while True:
-        stats = statistics([x.fitness for x in fits])
-	best = max(fits, key=lambda x: x.fitness)
-        print stats
-	print best
-        parents = parent_selector(fits)
-        children = child_maker(parents)
-        fit_fits(children)
-        fits.extend(children)
-        fits = survival_selector(fits)
-        print "poplength = ", len(fits)
+    makers = [wrapped_make_SA, wrapped_make_EA]
+    for fit in fits:
+        print "starting a fitness eval"
+        fit.fitness = fit_fit(fit, makers, 0)
+        print "ending a fitness eval"
+    print fits
 
 
 # if __name__ == "__main__":
