@@ -109,6 +109,6 @@ class fitness_DTRAP_Reece(object):
         child2 = other.clone()
         for attribute in ['a', 'b', 'k']:
             if random.random() < 0.5:
-                child1.__setattr__(attribute, other.__getattr__(attribute))
-                child2.__setattr__(attribute, self.__getattr__(attribute))
+                child1.__setattr__(attribute, other.__getattribute__(attribute))
+                child2.__setattr__(attribute, self.__getattribute__(attribute))
         return child1, child2
