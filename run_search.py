@@ -14,7 +14,6 @@ from representations.bit_string import bit_string
 from fitness_functions.DTRAP import fitness_DTRAP_Reece as dtrap
 
 from search_algorithms.mu_lambda_ea import make_solver as make_EA
-from search_algorithms.mu_lambda_ea import make_default_child_maker
 from search_algorithms.simulated_annealing import make_SA_solver as make_SA
 
 from selectors import make_SUS
@@ -25,6 +24,7 @@ ea_mu = 100
 ea_lam = 10
 
 fit_mu = 20
+fit_lam = 5
 fit_traplength = 4
 
 
@@ -45,7 +45,7 @@ def population_maker():
     return [random_solution_maker() for i in xrange(ea_mu)]
 
 
-def wrapped_make_EA(evals, fitness):
+def inner_wrapped_make_EA(evals, fitness):
     '''Adapter design pattern'''
     return make_EA(make_initial_population=population_maker,
                    survival_selector=make_SUS(fitness=fitness, n=ea_mu),
@@ -53,7 +53,7 @@ def wrapped_make_EA(evals, fitness):
                    fitness=fitness)
 
 
-def wrapped_make_SA(evals, fitness):
+def inner_wrapped_make_SA(evals, fitness):
     '''Adapter design pattern'''
     return make_SA(evals=evals,
                    initial_solution_maker=random_solution_maker,
@@ -72,24 +72,26 @@ def get_performance(fitness_function, search_maker, n=30, evals=10000):
 
 def fit_fit(fitness_function, makers, index):
     '''index is the index of the algorithm that is supposed to win'''
-    performs = [get_performance(fitness_function, sa)
+    performs = [get_performance(fitness_function, sa)['mean']
                 for sa in makers]
-    performs = [x['mean'] for x in performs]
-    diffs = [x - performs[index]
+    diffs = [performs[index] - x
              for x in performs[:index] + performs[index + 1:]]
-    diffs = [x + 20 for x in diffs]
+    diffs = [x + 150 for x in diffs]
     return min(diffs)
 
 
 def main():
-    fits = initial_fits()
-    makers = [wrapped_make_SA, wrapped_make_EA]
-    for fit in fits:
-        print "starting a fitness eval"
-        fit.fitness = fit_fit(fit, makers, 0)
-        print "ending a fitness eval"
-    print fits
-
+    makers = [inner_wrapped_make_SA,
+              inner_wrapped_make_EA]
+    outer_fit = lambda x: fit_fit(x, makers, 0)
+    outer_ea = make_EA(
+        make_initial_population=initial_fits,
+        survival_selector=make_SUS(fitness=outer_fit, n=fit_mu),
+        parent_selector=make_SUS(fitness=outer_fit, n=fit_lam),
+        make_initial_state=lambda: {'evals': 0, 'max_evals': 100},
+        fitness=outer_fit)
+    result = outer_ea()
+    print result
 
 # if __name__ == "__main__":
 #     main()
