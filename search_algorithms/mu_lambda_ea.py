@@ -17,14 +17,6 @@ def statistics(s):
     return result
 
 
-def make_initial_state():
-    return {'evals': 0, 'max_evals': 1000}
-
-
-def default_terminator(state):
-    return state['evals'] > state['max_evals']
-
-
 def make_cycle(child_maker, parent_selector, survivor_selector):
     def cycle(population, state):
         parents = parent_selector(population)
@@ -67,7 +59,8 @@ def make_solver(make_initial_population,
                 survival_selector,
                 parent_selector,
                 child_maker=None,
-                terminate=default_terminator,
+                make_initial_state=lambda: {'evals': 0, 'max_evals': 10000},
+                terminate=lambda x: x['evals'] > x['max_evals'],
                 fitness=lambda x: x):
     if child_maker is None:
         child_maker = make_default_child_maker()
