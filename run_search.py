@@ -13,7 +13,7 @@ from representations.bit_string import bit_string
 
 from fitness_functions.DTRAP import fitness_DTRAP_Reece as dtrap
 
-from search_algorithms.mu_lambda_ea import make_solver as make_EA
+from search_algorithms.mu_lambda_ea import make_EA_solver as make_EA
 from search_algorithms.simulated_annealing import make_SA_solver as make_SA
 
 from selectors import make_SUS
@@ -23,9 +23,13 @@ genome_length = 100
 ea_mu = 100
 ea_lam = 10
 
+inner_runs = 30
+inner_max_evals = 10000
+
 fit_mu = 20
 fit_lam = 5
 fit_traplength = 4
+outer_max_evals = 100
 
 
 def initial_fits():
@@ -60,7 +64,8 @@ def inner_wrapped_make_SA(evals, fitness):
                    fitness=fitness)
 
 
-def get_performance(fitness_function, search_maker, n=30, evals=10000):
+def get_performance(fitness_function, search_maker,
+                    n=inner_runs, evals=inner_max_evals):
     '''run search against fitness_function n times, allowing evals
     fitness evaluations per run. return a list corresponding to the
     fitness value of the best solution found per run'''
@@ -84,12 +89,14 @@ def main():
     makers = [inner_wrapped_make_SA,
               inner_wrapped_make_EA]
     outer_fit = lambda x: fit_fit(x, makers, 0)
+    selector = lambda x: make_SUS(fitness=outer_fit, n=x)
     outer_ea = make_EA(
         make_initial_population=initial_fits,
-        survival_selector=make_SUS(fitness=outer_fit, n=fit_mu),
-        parent_selector=make_SUS(fitness=outer_fit, n=fit_lam),
-        make_initial_state=lambda: {'evals': 0, 'max_evals': 100},
-        fitness=outer_fit)
+        survival_selector=selector(fit_mu),
+        parent_selector=selector(fit_lam),
+        make_initial_state=lambda: {'evals': 0, 'max_evals': outer_max_evals},
+        fitness=outer_fit,
+        noise=True)
     result = outer_ea()
     print result
 
