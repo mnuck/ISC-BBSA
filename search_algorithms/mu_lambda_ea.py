@@ -46,21 +46,17 @@ def make_default_crossover(crosser=lambda x, y: x.one_point_crossover(y)):
 def make_EA_solver(make_initial_population,
                    survival_selector,
                    parent_selector,
-                   evals=None,
+                   evals=10000,
                    child_maker=None,
                    make_initial_state=None,
-                   terminate=None,
+                   terminate=lambda x: x['evals'] > x['max_evals'],
                    fitness=lambda x: x,
                    noise=False,
                    **kwargs):
-    if evals is None:
-        evals = 10000
     if child_maker is None:
         child_maker = make_default_child_maker()
     if make_initial_state is None:
         make_initial_state = lambda: {'evals': 0, 'max_evals': evals}
-    if terminate is None:
-        terminate = lambda x: x['evals'] > x['max_evals']
 
     cycle = make_cycle(child_maker, parent_selector, survival_selector)
 
