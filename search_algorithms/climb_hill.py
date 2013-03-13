@@ -28,3 +28,24 @@ def climb_hill(current, fitness=lambda x: x.fitness, **kwargs):
     best_fit = max([fitness(x) for x in neighbors])
     candidates = [n for n in neighbors if fitness(n) == best_fit]
     return random.choice(candidates)
+
+
+def make_climb_hill_solver(evals, initial_solution_maker,
+                           fitness=lambda x: x.fitness, **kwargs):
+    def solver():
+        evals_left = evals
+        current = initial_solution_maker()
+        result = current
+        while evals_left > 0:
+            neighbors = current.get_neighbors()
+            best_fit = max([fitness(x) for x in neighbors])
+            evals_left -= len(neighbors)
+            if best_fit <= fitness(current):  # local optima found.
+                current = initial_solution_maker()
+            else:
+                candidates = [n for n in neighbors if fitness(n) == best_fit]
+                current = random.choice(candidates)
+            if fitness(current) > fitness(result):
+                result = current
+        return result
+    return solver

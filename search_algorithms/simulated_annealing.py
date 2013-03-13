@@ -51,14 +51,13 @@ def linear_decrease(starting_temp=1.0, max_time=10000):
 
 
 def make_SA_solver(evals, initial_solution_maker,
-                   temp_schedule=None, fitness=lambda x: x.fitness):
-    def SA_solver():
+                   temp_schedule=None, fitness=lambda x: x.fitness,
+                   **kwargs):
+    def solver():
         temp_schedule = linear_decrease(max_time=evals)
 
         result = initial_solution_maker()
         for i in xrange(evals):
             result = simulated_annealing(result, fitness, temp_schedule)
         return result
-
-    return SA_solver
-
+    return solver
