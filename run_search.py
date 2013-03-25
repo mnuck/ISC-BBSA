@@ -7,6 +7,8 @@ logformat = '%(asctime)s:%(levelname)s:%(message)s'
 loglevel = logging.WARNING
 logging.basicConfig(format=logformat, level=loglevel)
 
+import sys
+
 from utility import statistics
 
 from representations.bit_string import bit_string
@@ -25,14 +27,17 @@ genome_length = 16
 ea_mu = 100
 ea_lam = 10
 
-inner_runs = 2
+inner_runs = 5
 inner_max_evals = 10000
 
-fit_mu = 3
+fit_mu = 10
 fit_lam = 2
-outer_max_evals = 5
+outer_max_evals = 100
 
 output_file = "the_winners.txt"
+if len(sys.argv) == 2:
+    output_file = sys.argv[1]
+print "using output file", output_file
 
 
 def initial_fits():
