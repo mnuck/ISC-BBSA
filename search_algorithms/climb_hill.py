@@ -33,6 +33,7 @@ def climb_hill(current, fitness=lambda x: x.fitness, **kwargs):
 def make_climb_hill_solver(evals, initial_solution_maker,
                            fitness=lambda x: x.fitness, **kwargs):
     def solver():
+        print "starting a hill climb"
         evals_left = evals
         current = initial_solution_maker()
         result = current

@@ -5,12 +5,14 @@
 import random
 
 
-def make_cycle(child_maker, parent_selector, survivor_selector):
+def make_cycle(child_maker, parent_selector, survivor_selector, noise):
     def cycle(population, state):
         parents = parent_selector(population)
         children = child_maker(parents)
         population.extend(children)
         state['evals'] += len(children)
+        if noise:
+            print state
         population = survivor_selector(population)
         return population, state
     return cycle
@@ -52,20 +54,20 @@ def make_EA_solver(make_initial_population,
                    terminate=lambda x: x['evals'] > x['max_evals'],
                    fitness=lambda x: x,
                    noise=False,
+                   return_best=False,
                    **kwargs):
     if child_maker is None:
         child_maker = make_default_child_maker()
     if make_initial_state is None:
         make_initial_state = lambda: {'evals': 0, 'max_evals': evals}
 
-    cycle = make_cycle(child_maker, parent_selector, survival_selector)
+    cycle = make_cycle(child_maker, parent_selector, survival_selector, noise)
 
     def solver():
         state = make_initial_state()
+        print "starting an EA cycle", state
         population = make_initial_population()
         while not terminate(state):
-            if noise:
-                print len(population), "starting a cycle"
             population, state = cycle(population, state)
-        return population
+        return max(population, key=fitness) if return_best else population
     return solver

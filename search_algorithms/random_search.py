@@ -24,6 +24,7 @@ def make_random_search_solver(evals, initial_solution_maker,
                               fitness=lambda x: x.fitness,
                               **kwargs):
     def solver():
+        print "starting a random search"
         result = initial_solution_maker()
         for _ in xrange(evals):
             candidate = result.get_random()

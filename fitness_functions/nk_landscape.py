@@ -96,10 +96,17 @@ class fitness_nk_landscape(object):
         if hasattr(individual, 'fitness'):
             return individual.fitness
         result = 0
-        for neighbors, subfunc in zip(self.neighborses, self.subfuncs):
-            key = tuple(individual[i] for i in neighbors)
-            result += subfunc[key]
-        individual.fitness = result
+        try:
+            for neighbors, subfunc in zip(self.neighborses, self.subfuncs):
+                key = tuple(individual[i] for i in neighbors)
+                result += subfunc[key]
+            individual.fitness = result
+        except KeyError:
+            print "boom"
+            print key
+            print individual
+            print len(individual)
+            exit()
         return result
 
     def dumps(self):
