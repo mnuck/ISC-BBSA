@@ -17,7 +17,7 @@ try:
 except:
     pass
 
-# cudaEnabled = False   # to disable CUDA, uncomment this line
+cudaEnabled = False   # to disable CUDA, uncomment this line
 
 
 ###############################################
@@ -96,6 +96,8 @@ class fitness_nk_landscape(object):
         if hasattr(individual, 'fitness'):
             return individual.fitness
         result = 0
+        # if hasattr(self, 'cuda_fitness'):
+        #     return self.cuda_fitness([individual])
         try:
             for neighbors, subfunc in zip(self.neighborses, self.subfuncs):
                 key = tuple(individual[i] for i in neighbors)
@@ -127,8 +129,54 @@ class fitness_nk_landscape(object):
         if 'fitness' in payload:
             self.fitness = payload['fitness']
 
+    def one_point_increase_k(self):
+        """adds a new neighbor"""
+        child = self.clone()
+        if child.k == child.n:
+            return child
+        child.k += 1
+        for i in xrange(self.n):
+            choices = list(set(range(self.n)) - set(child.neighborses[i]))
+            child.neighborses[i] += (random.choice(choices),)
+        child.subfuncs = list()
+        for i in xrange(self.n):
+            subfunc = dict()
+            for key in self.subfuncs[i]:
+                a = self.subfuncs[i][key]
+                subfunc[key + (0,)] = a + (random.random() - 0.5)
+                subfunc[key + (1,)] = a + (random.random() - 0.5)
+            child.subfuncs.append(subfunc)
+        return child
+
+    def one_point_decrease_k(self):
+        """removes a neighbor"""
+        child = self.clone()
+        if child.k == 0:
+            return child
+        child.k -= 1
+        loser = random.randint(1, self.k)
+        for i in xrange(self.n):
+            a = child.neighborses[i]
+            child.neighborses[i] = a[:loser] + a[loser + 1:]
+        child.subfuncs = list()
+        for i in xrange(self.n):
+            subfunc = dict()
+            for key in product(*([xrange(2)] * self.k)):
+                a = self.subfuncs[i]
+                subfunc[key] = a[key[:loser] + (0,) + key[loser + 1:]] + \
+                               a[key[:loser] + (1,) + key[loser + 1:]] / 2
+            child.subfuncs.append(subfunc)
+        return child
+
+    def one_point_alter_k(self):
+        print "altering k!"
+        if random.random() < 0.5:
+            return self.one_point_increase_k()
+        else:
+            return self.one_point_decrease_k()
+
     def one_point_mutate_neighbors(self):
-        "mutates just the identity of the k neighbors at a single location"
+        """mutates just the identity of the k neighbors at a single location"""
         child = self.clone()
         i = random.randint(0, child.n - 1)
         r = range(child.n)
@@ -139,7 +187,7 @@ class fitness_nk_landscape(object):
         return child
 
     def one_point_mutate_subfuncs(self):
-        "mutates just the subfuncs at a single location"
+        """mutates just the subfuncs at a single location"""
         child = self.clone()
         i = random.randint(0, child.n - 1)
         for key in child.subfuncs[i]:
@@ -151,13 +199,16 @@ class fitness_nk_landscape(object):
 
     def one_point_mutate(self):
         """mutates both the identity of the k neighbors as well as the
-        subfuncs at a single index location"""
+        subfuncs at a single index location, and might alter k itself"""
+        print "NK mutating!"
         child = self.clone()
         i = random.randint(0, child.n - 1)
         r = range(child.n)
         child.neighborses[i] = [i] + random.sample(r[:i] + r[i + 1:], child.k)
         for key in child.subfuncs[i]:
             child.subfuncs[i][key] += (random.random() - 0.5)
+        if random.random() < 0.5:
+            child = child.one_point_alter_k()
         if cudaEnabled:
             child.cuda_fitness = generate_cuda_fitness(child.neighborses,
                                                        child.subfuncs)
@@ -165,19 +216,21 @@ class fitness_nk_landscape(object):
 
     def one_point_crossover(self, other):
         "performs one point crossover on self and other, returns 2 children"
-        if self.n != other.n:
-            raise Exception("nk_landscape self.n = %i but other.n = %i!" %
-                            (self.n, other.n))
-        if self.k != other.k:
-            raise Exception("nk_landscape self.k = %i but other.k = %i!" %
-                            (self.k, other.k))
+        print "NK crossover!"
+        # if self.n != other.n:
+        #     raise Exception("nk_landscape self.n = %i but other.n = %i!" %
+        #                     (self.n, other.n))
+        # if self.k != other.k:
+        #     raise Exception("nk_landscape self.k = %i but other.k = %i!" %
+        #                     (self.k, other.k))
         child1 = self.clone()
         child2 = other.clone()
-        i = random.randint(0, self.n - 1)
-        child1.neighborses[:i] = other.neighborses[:i]
-        child2.neighborses[i:] = self.neighborses[i:]
-        child1.subfuncs[:i] = other.subfuncs[:i]
-        child2.subfuncs[i:] = self.subfuncs[i:]
+        if self.n == other.n and self.k == other.k:
+            i = random.randint(0, self.n - 1)
+            child1.neighborses[:i] = other.neighborses[:i]
+            child2.neighborses[i:] = self.neighborses[i:]
+            child1.subfuncs[:i] = other.subfuncs[:i]
+            child2.subfuncs[i:] = self.subfuncs[i:]
         if cudaEnabled:
             child1.cuda_fitness = generate_cuda_fitness(child1.neighborses,
                                                         child1.subfuncs)
