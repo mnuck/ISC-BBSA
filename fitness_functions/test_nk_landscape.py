@@ -41,14 +41,16 @@ from nk_landscape import fitness_nk_landscape
 #     print how_many, stats['mean'], stats['stddev']
 
 
-f = fitness_nk_landscape()
-g = f.one_point_increase_k()
-h = f.one_point_decrease_k()
-i = g.one_point_increase_k()
-j = h.one_point_decrease_k()
+# f = fitness_nk_landscape()
+# g = f.one_point_increase_k()
+# h = f.one_point_decrease_k()
+# i = g.one_point_increase_k()
+# j = h.one_point_decrease_k()
 
-print f
-print g
-print h
-print i
-print j
+import random
+
+f = fitness_nk_landscape()
+f = f.one_point_increase_k()
+f = f.one_point_decrease_k()
+
+exit()

@@ -132,7 +132,7 @@ class fitness_nk_landscape(object):
     def one_point_increase_k(self):
         """adds a new neighbor"""
         child = self.clone()
-        if child.k == child.n:
+        if child.k == child.n - 1:
             return child
         child.k += 1
         for i in xrange(self.n):
@@ -163,8 +163,8 @@ class fitness_nk_landscape(object):
             subfunc = dict()
             for key in product(*([xrange(2)] * self.k)):
                 a = self.subfuncs[i]
-                subfunc[key] = a[key[:loser] + (0,) + key[loser + 1:]] + \
-                               a[key[:loser] + (1,) + key[loser + 1:]] / 2
+                subfunc[key] = (a[key[:loser] + (0,) + key[loser:]] + \
+                                a[key[:loser] + (1,) + key[loser:]]) / 2
             child.subfuncs.append(subfunc)
         return child
 

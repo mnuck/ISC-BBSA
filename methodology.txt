@@ -1,0 +1,38 @@
+NK-Landscapes
+
+Rationale
+When using NK-landscapes, typically the experiement is set up to use a large number of randomly generated landscape to lessen the impact of any one landscape on the results. This line of research, however, is explicitly searching for fitness landscapes that have an outsized impact. Each NK-landscape generated is evaluated on its ability to discriminate amongst a set of search algorithms. A high scoring landscape is one that shows a clear preference for one of the search algorithms, such that the chosen algorithm consistently finds a better solution than all other algorithms in the set. This is determined via the following methodology.
+
+Implementation
+In this paper, NK-landscapes are implemented as a pair of lists. The first list is the neighbors list. The neighbors list is n elements long, where each element is a list of k+1 integer indexes. Each element of the i'th inner list is a neighbor of i, and will participate in the calculation of that part of the overall fitness. A important implementation detail is that the first element of the i'th inner list is i, for all i. Making the element under consideration part of the underlying data (as opposed to a special case) simplifies and regularizes the code, an important consideration when metaprogramming is used. A second important implementation detail is that no number may appear in a neighbor list more than once. This forces the importance of a single index point to be visible in the second list, allowing for easier analysis. The first list is called the neighborses list, to indicate the nested plurality of its structure.
+
+The second list is the subfunctions list. The subfunctions list is used in conjunction with the neighborses list to determine the overall fitness of the individual under evaluation. The subfunction list is implemented as a list of key value stores, of list length n. Each key in the key value store is a binary tuple of length k, with every possible such tuple represented in every key value store. For example, if k is 2, then the possible keys are (0, 0), (0, 1), (1, 0), and (1, 1). The values for each key are real numbers, both positive and negative.
+
+Evaluation of a Bit String Individual
+To evaluate an individual, the system runs down the pair of lists simultaneously . For each element in neighborses, it extracts the binary value of the individual at the listed indexes in the first list. It assembles those binary values into a single tuple. It then looks at the corresponding subfunc key value store in the subfuncs list and finds the value associated with that tuple. The sum of the values found for each element in the pair of lists is the fitness of that individual in the context of this NK-landscape.
+
+Part of the design consideration for this structure was ease of metaprogramming for CUDA. The various components of the lists plug into a string template of C++ code, which is then compiled into a CUDA kernel. This kernel can then be run against a large number of individuals simultaneously. This approach is not expected to be as fast as a hand-tuned CUDA kernel that pays proper respect to the various memory subsystems available, however it has shown to be faster than running the fitness evaluations on the CPU, given a sufficiently large number of individuals in need of evaluation.
+
+Evolutionary Operators
+The search algorithm chosen to guide the modification of the NK landscapes is a canonical mu+lambda evolutionary algorithm, with stochastic universal sampling used for both parent selection and survival selection. Such an algorithm needs to be able to mutate an individual, perform genetic crossover between individuals, and determine the fitness of an individual. Mutation and crossover are intrinsic to the representation of the individual, and will be covered first. Fitness evaluation is left for a later section.
+
+Mutation of an NK-landscape is performed in three ways, and during any given mutation event all, some, or none of the three ways may be used. The first mutation method is to alter the neighbors list at a single neighborses location. This does not alter the length of the list, nor may it ever alter the first element in the list. The second mutation method is to alter the subfunc at a single location. All possible tuple keys are still found, but the values associated with those keys are altered by a random amount.
+
+The third mutation method alters k. When k is increased, each element of the neighborses list gains one randomly chosen neighbor, with care taken that no neighbor can be in the same list twice, nor can k ever exceed n. Increasing k by 1 doubles the size of the subfunc key value stores, since each key in the parent has two corresponding entries in the child key, one ending in 0, the other ending in 1. For example the key (0, 1) in the original NK-landscape would need corresponding entries for (0, 1, 0) and (0, 1, 1) in the mutated NK-landscape. This implementation starts with the value in the original key and alters it by a different random amount for each entry in the mutated NK-landscape.
+
+When k is decreased, a single point in the inner lists is randomly chosen, and the neighbor found at that point is removed from each of the lists. Care is taken so that the first neighbor is never removed, so k can never be less than zero. The corresponding entry in subfuncs has two parents, for example if the second point in the inner list is chosen, then both (0, 1, 0) and (0, 0, 0) will map to (0, 0) in the mutated NK-landscape. This implementation averages the values of the two parent keys for each index in the subfuncs list.
+
+Genetic crossover is only possible in this implementation between individuals of identical n and k, via single point crossover of the neighborses and subfuncs lists. The system is therefore dependent on mutation to alter k, and holds n constant during any given system run.
+
+Evaluation of NK-Landscape Fitness
+All of this NK-Landscape manipulation infrastructure is used to evolve landscapes that clearly favor a given search algorithm over all other algorithms in a set. Accordingly, a fitness score must be assigned to each NK-Landscape in a population, so that natural selection can favor the better landscapes, guiding the meta-search towards an optimal landscape for the selected search algorithm. This implementation uses the minimum difference between average optimal solutions found between the selected search algorithm and all other search algorithms in the set. As an example, consider the hypothetical data gathered in the following table, listing the average optimal solution found followed by the standard deviation in parenthesies.
+
+TABLE
+Name                  NK-L1       NK-L2        NK-L3
+Random Search         15(2)       20(10)      112(30)
+Hill Climber          20(3)       25(2)       114(15)
+Simulated Annealing   14(1)       30(6)       150(12)
+Mu + Lambda EA        12(5)       40(5)       130(12)
+
+For NK-L 1, the hill climber algorithm beats all other algorithms, and the minimum difference is 20 - 15 = 5, so the fitness of NK-L if we are trying to optimize for hill climber is 5. However if we are trying to optimize for random search on this run then the fitness of NK-L1 is 15 - 20 = -5. Note that this definition of fitness does not take variance into account, this is left for future work.
+

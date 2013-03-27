@@ -61,3 +61,57 @@ def make_SUS(fitness=lambda x: x.fitness, n=1):
                 choice_point += spacing
         return result
     return f
+
+
+def make_LR_wrapper(algorithm_maker,
+                    fitness=lambda x: x.fitness, s=2.0, **kwargs):
+    def rank_fit(population):
+        lookup = [[fitness(x), i] for i, x in enumerate(population)]
+        lookup.sort(key=lambda (a, b): a)
+        mu = len(population)
+        for i in xrange(mu):
+            lookup[i][0] = ((2 - s) / mu) + \
+                           ((2 * i * (s - 1)) / (mu * (mu - 1)))
+        lookup.sort(key=lambda (a, b): b)
+        lookup = [a for (a, b) in lookup]
+        for (fit, individual) in zip(lookup, population):
+            individual.__fitrank = fit
+        return lambda x: x.__fitrank
+
+    def f(population):
+        fit = rank_fit(population)
+        selector = algorithm_maker(fitness=fit, **kwargs)
+        return selector(population)
+    return f
+
+
+def make_LR_SUS(fitness=lambda x: x.fitness, s=2.0, n=1):
+    return make_LR_wrapper(make_SUS, fitness, s, n=n)
+
+
+# def make_LR_SUS(fitness=lambda x: x.fitness, s=2.0, n=1):
+#     def f(population):
+#         lookup = [[fitness(x), i] for i, x in enumerate(population)]
+#         lookup.sort(key=lambda (a, b): a)
+#         mu = len(population)
+#         for i in xrange(mu):
+#             lookup[i][0] = ((2 - s) / mu) + \
+#                            ((2 * i * (s - 1)) / (mu * (mu - 1)))
+#         lookup.sort(key=lambda (a, b): b)
+#         lookup = [a for (a, b) in lookup]
+#         for (fit, individual) in zip(lookup, population):
+#             individual.__fitrank = fit
+#         fit = lambda x: x.__fitrank
+
+#         total_fitness = 1.0
+#         spacing = total_fitness / float(n)
+#         choice_point = random.random() * spacing
+#         accumulated_fitness = 0
+#         result = list()
+#         for individual in population:
+#             accumulated_fitness += fit(individual)
+#             while choice_point < accumulated_fitness:
+#                 result.append(individual)
+#                 choice_point += spacing
+#         return result
+#     return f

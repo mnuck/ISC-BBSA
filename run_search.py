@@ -20,18 +20,18 @@ from search_algorithms.simulated_annealing import make_SA_solver as make_SA
 from search_algorithms.climb_hill import make_climb_hill_solver as make_CH
 from search_algorithms.random_search import make_random_search_solver as make_RA
 
-from selectors import make_SUS
+from selectors import make_LR_SUS
 
 
 genome_length = 16
 ea_mu = 100
 ea_lam = 10
 
-inner_runs = 5
+inner_runs = 2
 inner_max_evals = 10000
 
 fit_mu = 10
-fit_lam = 2
+fit_lam = 3
 outer_max_evals = 100
 
 output_file = "the_winners.txt"
@@ -59,8 +59,8 @@ def population_maker():
 def inner_wrapped_make_EA(evals, fitness):
     '''Adapter design pattern'''
     return make_EA(make_initial_population=population_maker,
-                   survival_selector=make_SUS(fitness=fitness, n=ea_mu),
-                   parent_selector=make_SUS(fitness=fitness, n=ea_lam),
+                   survival_selector=make_LR_SUS(fitness=fitness, s=2.0, n=ea_mu),
+                   parent_selector=make_LR_SUS(fitness=fitness, s=2.0, n=ea_lam),
                    fitness=fitness, return_best=True)
 
 
@@ -96,14 +96,23 @@ def get_performance(fitness_function, search_maker,
     return statistics(result_fits)
 
 
+def normalize(s, key=lambda x: x):
+    maxfit = max(s, key=key)
+    minfit = min(s, key=key)
+    scale = float(maxfit - minfit)
+    return [(x - minfit) / scale for x in s]
+
+
 def fit_fit(fitness_function, makers, index):
     '''index is the index of the algorithm that is supposed to win'''
-    performs = [get_performance(fitness_function, sa)['mean']
-                for sa in makers]
-    diffs = [performs[index] - x
-             for x in performs[:index] + performs[index + 1:]]
-    diffs = [x + 150 for x in diffs]
-    return min(diffs)
+    if not hasattr(fitness_function, 'fitness'):
+        performs = [get_performance(fitness_function, sa)['mean']
+                    for sa in makers]
+        performs = normalize(performs)
+        diffs = [performs[index] - x
+                 for x in performs[:index] + performs[index + 1:]]
+        fitness_function.fitness = min(diffs)
+    return fitness_function.fitness
 
 
 def do_eet(index):
@@ -112,7 +121,7 @@ def do_eet(index):
               inner_wrapped_make_CH,
               inner_wrapped_make_RA]
     outer_fit = lambda x: fit_fit(x, makers, index)
-    selector = lambda x: make_SUS(fitness=outer_fit, n=x)
+    selector = lambda x: make_LR_SUS(fitness=outer_fit, s=2.0, n=x)
     outer_ea = make_EA(
         make_initial_population=initial_fits,
         survival_selector=selector(fit_mu),
