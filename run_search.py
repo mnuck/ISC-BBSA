@@ -109,7 +109,6 @@ def normalize(s, key=lambda x: x):
     minfit = worst_ever
     scale = float(maxfit - minfit)
     result = [(x - minfit) / scale for x in s]
-    print "normalized fits:", result
     return result
 
 
@@ -167,27 +166,25 @@ def distributed_fit_fit(fitness_function, makers, index):
                        'nkID':  nkID,
                        'bbsa':  maker.name}
                 stalk.put(json.dumps(req))
+                jobID += 1
         results = {name: list() for name in maker_names.keys()}
-        for _ in len(makers):
+        for _ in makers:
             for _ in xrange(inner_runs):
-                stalk.get(job)
+                job = stalk.reserve()
                 result = json.loads(job.body)
                 job.delete()
+                results[result['bbsa']].append(result['best'])
                 if worst_ever is None or result['worst'] < worst_ever:
-                    print "new worst ever!"
                     worst_ever = result['worst']
-                    results[result['bbsa']].append(result['best'])
         performs = list()
         for name in [x.name for x in makers]:
             performs.append(statistics(results[name])['mean'])
 
         performs = normalize(performs)
-        print "performs:", performs
         diffs = [performs[index] - x
                  for x in performs[:index] + performs[index + 1:]]
-        print "diffs:", diffs
         fitness_function.fitness = min(diffs)
-        print "fitness of this NK landscape:", fitness_function.fitness
+        print "fitness of", fitness_function.nkID, fitness_function.fitness
     return fitness_function.fitness
 
 
@@ -301,8 +298,6 @@ if len(sys.argv) == 5:  # all cows eat grass
     client()
 
 if len(sys.argv) == 6:  # good boys do fine always
-    global distributed
-    global stalk
     distributed = True
     stalk = beanstalkc.Connection(host="r10mannr4.device.mst.edu")
     stalk.watch('bbsa-job-results')
