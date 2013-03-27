@@ -32,12 +32,12 @@ genome_length = 16
 ea_mu = 100
 ea_lam = 10
 
-inner_runs = 2
+inner_runs = 30
 inner_max_evals = 10000
 
-fit_mu = 10
-fit_lam = 3
-outer_max_evals = 100
+fit_mu = 100
+fit_lam = 10
+outer_max_evals = 1000
 
 output_file = "the_winners.txt"
 if len(sys.argv) == 2:
@@ -181,6 +181,7 @@ def distributed_fit_fit(fitness_function, makers, index):
             performs.append(statistics(results[name])['mean'])
 
         performs = normalize(performs)
+        print index, performs
         diffs = [performs[index] - x
                  for x in performs[:index] + performs[index + 1:]]
         fitness_function.fitness = min(diffs)
@@ -190,8 +191,8 @@ def distributed_fit_fit(fitness_function, makers, index):
 
 def do_eet(index):
     global distributed
-    makers = [inner_wrapped_make_SA,
-              inner_wrapped_make_EA,
+    makers = [inner_wrapped_make_EA,
+              inner_wrapped_make_SA,
               inner_wrapped_make_CH,
               inner_wrapped_make_RA]
     if distributed:
@@ -251,7 +252,7 @@ def for_a_size(x):
 def main():
     for_a_size(16)
     for_a_size(32)
-    for_a_size(128)
+    for_a_size(64)
 
 
 def fetch_nk_landscape(nkID):
@@ -301,6 +302,9 @@ if len(sys.argv) == 6:  # good boys do fine always
     distributed = True
     stalk = beanstalkc.Connection(host="r10mannr4.device.mst.edu")
     stalk.watch('bbsa-job-results')
+    while stalk.stats_tube('bbsa-job-results')['current-jobs-ready'] > 0:
+        job = stalk.reserve()
+        job.delete()
     stalk.use('bbsa-job-requests')
     main()
 
