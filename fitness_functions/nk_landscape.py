@@ -18,6 +18,7 @@ except:
     pass
 
 cudaEnabled = False   # to disable CUDA, uncomment this line
+nkID = 0
 
 
 ###############################################
@@ -44,6 +45,9 @@ cudaEnabled = False   # to disable CUDA, uncomment this line
 class fitness_nk_landscape(object):
     def __init__(self, n=8, k=1):
         "constructor"
+        global nkID
+        self.nkID = nkID
+        nkID += 1
         self.n = n
         self.k = k
         self.neighborses = list()
@@ -163,7 +167,7 @@ class fitness_nk_landscape(object):
             subfunc = dict()
             for key in product(*([xrange(2)] * self.k)):
                 a = self.subfuncs[i]
-                subfunc[key] = (a[key[:loser] + (0,) + key[loser:]] + \
+                subfunc[key] = (a[key[:loser] + (0,) + key[loser:]] +
                                 a[key[:loser] + (1,) + key[loser:]]) / 2
             child.subfuncs.append(subfunc)
         return child
