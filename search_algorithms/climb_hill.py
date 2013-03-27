@@ -4,6 +4,8 @@
 
 import random
 
+worst_ever = None
+
 
 ###############################################
 ### climb_hill
@@ -33,13 +35,18 @@ def climb_hill(current, fitness=lambda x: x.fitness, **kwargs):
 def make_climb_hill_solver(evals, initial_solution_maker,
                            fitness=lambda x: x.fitness, **kwargs):
     def solver():
+        global worst_ever
         print "starting a hill climb"
         evals_left = evals
         current = initial_solution_maker()
+        worst_ever = fitness(current)
         result = current
         while evals_left > 0:
             neighbors = current.get_neighbors()
             best_fit = max([fitness(x) for x in neighbors])
+            worst_fit = min([fitness(x) for x in neighbors])
+            if worst_fit < worst_ever:
+                worst_ever = worst_fit
             evals_left -= len(neighbors)
             if best_fit <= fitness(current):  # local optima found.
                 current = initial_solution_maker()

@@ -85,33 +85,56 @@ def inner_wrapped_make_RA(evals, fitness):
                    fitness=fitness)
 
 
+worst_ever = None
+
+
 def get_performance(fitness_function, search_maker,
                     n=inner_runs, evals=inner_max_evals):
     '''run search against fitness_function n times, allowing evals
     fitness evaluations per run. return a list corresponding to the
     fitness value of the best solution found per run'''
+    global worst_ever
     search = search_maker(evals=evals, fitness=fitness_function)
-    results = [search() for _ in xrange(n)]
+    # results = [search() for _ in xrange(n)]
+    results = list()
+    for _ in xrange(n):
+        results.append(search())
+        worst = search.func_globals['worst_ever']
+        print "worst individual:", worst
+        if worst_ever is None or worst < worst_ever:
+            print "new worst ever!"
+            worst_ever = worst
+
     result_fits = [fitness_function(x) for x in results]
+    print "resulting fits:", result_fits
     return statistics(result_fits)
 
 
 def normalize(s, key=lambda x: x):
+    global worst_ever
     maxfit = max(s, key=key)
-    minfit = min(s, key=key)
+    # minfit = min(s, key=key)
+    minfit = worst_ever
     scale = float(maxfit - minfit)
-    return [(x - minfit) / scale for x in s]
+    result = [(x - minfit) / scale for x in s]
+    print "normalized fits:", result
+    return result
 
 
 def fit_fit(fitness_function, makers, index):
     '''index is the index of the algorithm that is supposed to win'''
+    global worst_ever
     if not hasattr(fitness_function, 'fitness'):
+        worst_ever = None
         performs = [get_performance(fitness_function, sa)['mean']
                     for sa in makers]
         performs = normalize(performs)
+        print "performs:", performs
         diffs = [performs[index] - x
                  for x in performs[:index] + performs[index + 1:]]
+        print "diffs:", diffs
         fitness_function.fitness = min(diffs)
+        print "fitness of this NK landscape:", fitness_function.fitness
     return fitness_function.fitness
 
 
@@ -143,24 +166,28 @@ def for_a_size(x):
     f = open(output_file, 'a')
     f.write("-----------------------------------------\n")
     f.write("Best NK-Landscape for Simulated Annealing %i\n" % genome_length)
+    f.write("Fitness: %f\n" % SA_best.fitness)
     f.write("%s\n" % SA_best)
     f.write("%s\n" % SA_best.neighborses)
     f.write("%s\n" % SA_best.subfuncs)
 
     f.write("-----------------------------------------\n")
     f.write("Best NK-Landscape for Mu Lambda EA %i\n" % genome_length)
+    f.write("Fitness: %f\n" % EA_best.fitness)
     f.write("%s\n" % EA_best)
     f.write("%s\n" % EA_best.neighborses)
     f.write("%s\n" % EA_best.subfuncs)
 
     f.write("-----------------------------------------\n")
     f.write("Best NK-Landscape for Hill Climber %i\n" % genome_length)
+    f.write("Fitness: %f\n" % CH_best.fitness)
     f.write("%s\n" % CH_best)
     f.write("%s\n" % CH_best.neighborses)
     f.write("%s\n" % CH_best.subfuncs)
 
     f.write("-----------------------------------------\n")
     f.write("Best NK-Landscape for Random Search %i\n" % genome_length)
+    f.write("Fitness: %f\n" % RA_best.fitness)
     f.write("%s\n" % RA_best)
     f.write("%s\n" % RA_best.neighborses)
     f.write("%s\n" % RA_best.subfuncs)
@@ -169,8 +196,8 @@ def for_a_size(x):
 
 def main():
     for_a_size(16)
-    for_a_size(64)
-    for_a_size(256)
+    for_a_size(32)
+    for_a_size(128)
 
 
 import cProfile

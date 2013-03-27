@@ -4,6 +4,8 @@
 
 import random
 
+worst_ever = None
+
 
 ###############################################
 ### simulated annealing
@@ -25,7 +27,10 @@ def simulated_annealing(current,
                         fitness=lambda x: x.fitness,
                         temp=lambda: 0):
     '''Climbs hills, but sometimes is willing to go downhill'''
+    global worst_ever
     neighbor = random.choice(current.get_neighbors())
+    if fitness(neighbor) < worst_ever:
+        worst_ever = fitness(neighbor)
     if fitness(current) > fitness(neighbor):
         better, worse = current, neighbor
     else:
@@ -54,10 +59,12 @@ def make_SA_solver(evals, initial_solution_maker,
                    temp_schedule=None, fitness=lambda x: x.fitness,
                    noise=False, **kwargs):
     def solver():
+        global worst_ever
         print "starting a simulated annealing"
         temp_schedule = linear_decrease(max_time=evals)
 
         result = initial_solution_maker()
+        worst_ever = fitness(result)
         for i in xrange(evals):
             if noise and i % 1000 == 0:
                 print "annealing!", i

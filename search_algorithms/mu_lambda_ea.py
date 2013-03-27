@@ -4,6 +4,8 @@
 
 import random
 
+worst_ever = None
+
 
 def make_cycle(child_maker, parent_selector, survivor_selector, noise):
     def cycle(population, state):
@@ -64,10 +66,15 @@ def make_EA_solver(make_initial_population,
     cycle = make_cycle(child_maker, parent_selector, survival_selector, noise)
 
     def solver():
+        global worst_ever
         state = make_initial_state()
         print "starting an EA cycle", state
         population = make_initial_population()
+        worst_ever = min([fitness(x) for x in population])
         while not terminate(state):
             population, state = cycle(population, state)
+            worst_now = min([fitness(x) for x in population])
+            if worst_now < worst_ever:
+                worst_ever = worst_now
         return max(population, key=fitness) if return_best else population
     return solver
