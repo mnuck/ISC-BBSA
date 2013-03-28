@@ -28,11 +28,11 @@ from selectors import make_LR_SUS
 distributed = False
 stalk = None
 
-genome_length = 16
+genome_length = 32
 ea_mu = 100
 ea_lam = 10
 
-inner_runs = 30
+inner_runs = 10
 inner_max_evals = 10000
 
 fit_mu = 100
@@ -180,8 +180,9 @@ def distributed_fit_fit(fitness_function, makers, index):
         for name in [x.name for x in makers]:
             performs.append(statistics(results[name])['mean'])
 
+        kept = performs
         performs = normalize(performs)
-        print index, performs
+        print index, kept, performs
         diffs = [performs[index] - x
                  for x in performs[:index] + performs[index + 1:]]
         fitness_function.fitness = min(diffs)
@@ -213,8 +214,8 @@ def do_eet(index):
 def for_a_size(x):
     global genome_length
     genome_length = x
-    SA_best = do_eet(0)
-    EA_best = do_eet(1)
+    EA_best = do_eet(0)
+    SA_best = do_eet(1)
     CH_best = do_eet(2)
     RA_best = do_eet(3)
 
@@ -250,7 +251,6 @@ def for_a_size(x):
 
 
 def main():
-    for_a_size(16)
     for_a_size(32)
     for_a_size(64)
 
@@ -301,6 +301,11 @@ if len(sys.argv) == 5:  # all cows eat grass
 if len(sys.argv) == 6:  # good boys do fine always
     distributed = True
     stalk = beanstalkc.Connection(host="r10mannr4.device.mst.edu")
+    stalk.watch('bbsa-job-requests')
+    while stalk.stats_tube('bbsa-job-requests')['current-jobs-ready'] > 0:
+        job = stalk.reserve()
+        job.delete()
+    stalk.ignore('bbsa-job-requests')
     stalk.watch('bbsa-job-results')
     while stalk.stats_tube('bbsa-job-results')['current-jobs-ready'] > 0:
         job = stalk.reserve()
