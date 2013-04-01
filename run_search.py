@@ -47,7 +47,7 @@ print "using output file", output_file
 
 def initial_fits():
     '''initial population of fitnesses'''
-    return [nk(n=genome_length) for i in xrange(fit_mu)]
+    return [nk(n=genome_length, k=8) for i in xrange(fit_mu)]
 
 
 def random_solution_maker():
