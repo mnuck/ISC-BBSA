@@ -4,8 +4,8 @@
 
 import logging
 logformat = '%(asctime)s:%(levelname)s:%(message)s'
-loglevel = logging.WARNING
-logging.basicConfig(format=logformat, level=loglevel)
+loglevel = logging.INFO
+logging.basicConfig(filename='spewlog.log', format=logformat, level=loglevel)
 
 import sys
 import json
@@ -32,14 +32,14 @@ genome_length = 32
 ea_mu = 100
 ea_lam = 10
 
-inner_runs = 10
+inner_runs = 5
 inner_max_evals = 10000
 
-fit_mu = 100
-fit_lam = 10
-outer_max_evals = 1000
+fit_mu = 20
+fit_lam = 5
+outer_max_evals = 100
 
-output_file = "the_winners.txt"
+output_file = "ISC.txt"
 if len(sys.argv) == 2:
     output_file = sys.argv[1]
 print "using output file", output_file
@@ -190,6 +190,7 @@ def distributed_fit_fit(fitness_function, makers, index):
 
         kept = performs
         performs = normalize2(performs, best_ever, worst_ever)
+        fitness_function.performs = performs
         print index, kept, performs
         diffs = [performs[index] - x
                  for x in performs[:index] + performs[index + 1:]]
@@ -213,7 +214,9 @@ def do_eet(index):
         make_initial_population=initial_fits,
         survival_selector=selector(fit_mu),
         parent_selector=selector(fit_lam),
-        make_initial_state=lambda: {'evals': 0, 'max_evals': outer_max_evals},
+        make_initial_state=lambda: {'evals': 0,
+                                    'max_evals': outer_max_evals,
+                                    'solverID': makers[index].name},
         fitness=outer_fit,
         noise=True, return_best=True)
     return outer_ea()
@@ -260,7 +263,6 @@ def for_a_size(x):
 
 def main():
     for_a_size(32)
-    for_a_size(64)
 
 
 def fetch_nk_landscape(nkID):

@@ -1,3 +1,20 @@
+What story am I trying to tell here?
+
+The language of NK-Landscapes has enough expressive power to evolve fitness functions that favor a user selected black box search algorithm above all other black box search algorithms in a set.
+
+10000 inner evals
+mu = 100, lambda = 10 for EA (SUS, rank based fitness)
+linear cooling schedule for SA
+
+30 inner runs
+
+32 bit genome length
+starting k = 8
+
+1000 outer evals, mu = 100, lambda = 10
+
+
+
 NK-Landscapes
 
 Rationale
@@ -27,6 +44,59 @@ Genetic crossover is only possible in this implementation between individuals of
 Evaluation of NK-Landscape Fitness
 All of this NK-Landscape manipulation infrastructure is used to evolve landscapes that clearly favor a given search algorithm over all other algorithms in a set. Accordingly, a fitness score must be assigned to each NK-Landscape in a population, so that natural selection can favor the better landscapes, guiding the meta-search towards an optimal landscape for the selected search algorithm.
 
-This implementation defines the fitness of the NK-landscape as follows. First, the 'performance' of each search algorithm is found. The performance is defined as the mean of the fitness values of the optimal solutions found across several runs. While performance is being calculated all search algorithms also record the fitness of the worst individual they ever encountered in the NK-landscape. This provides a heuristic for an unknown value: the value of the worst possible individual in the NK-landscape. Once a performance value has been calculated for every search algorithm in the set, the performance values and 'worst ever encountered' value are linearly scaled into the range [0, 1], such that the worst ever encountered value maps to zero and the best performance value maps to one. This provides a relative measure of the performance of the various search algorithms, as well as allowing for fair comparisons between NK-landscape.
+This implementation defines the fitness of the NK-landscape as follows. First, the 'performance' of each search algorithm is found. The performance is defined as the mean of the fitness values of the optimal solutions found across several (n=30) runs. While performance is being calculated all search algorithms also record the fitness of the worst individual they ever encountered in the NK-landscape. This provides a heuristic for an unknown value: the value of the worst possible individual in the NK-landscape. Once a performance value has been calculated for every search algorithm in the set, the performance values and 'worst ever encountered' value are linearly scaled into the range [0, 1], such that the worst ever encountered value maps to zero and the best ever encountered value maps to one. This provides a relative measure of the performance of the various search algorithms, as well as allowing for fair comparisons between NK-landscape.
 
-Once each search algorithm has a normalized performance value, the system needs to judge how well this NK landscape 'clearly favors a given search algorithm over all other algorithms in the set'. The heuristic used in this implementation is to calculate the set of differences between the performance of the favored algorithm and the performance of each of the other algorithms, and then find the minimum of the set of differences. The minimum of the set of differences is then used as the fitness of the NK-landscape. Note that the fitness ranges from -1 to 1. A fitness of 1 would correspond to an NK-landscape where the optimal individual found by all of the non-favored algorithms has identical fitness to the 'worst ever encountered' individual, while the favored algorithm finds any individual better than that.
+Once each search algorithm has a normalized performance value, the system needs to judge how well this NK landscape 'clearly favors a given search algorithm over all other algorithms in the set'. This implementation tried two approaches, one more successful than the other.
+
+One versus All
+The first heuristic used in this implementation wass to calculate the set of differences between the performance of the favored algorithm and the performance of each of the other algorithms, and then find the minimum of the set of differences. The minimum of the set of differences is then used as the fitness of the NK-landscape. Note that the fitness ranges from -1 to 1. A fitness of 1 would correspond to an NK-landscape where the optimal individual found by all of the non-favored algorithms has identical fitness to the 'worst ever encountered' individual, while the favored algorithm finds any individual better than that. This approach suffered because it needed a 'multiple coincidence' to make any forward progress. The use of the minimum function meant that an NK-landscape needed to clearly favor one algorithm over all others. Favoring a pair of algorithms over all others was indistinguishable from not favoring any algorithms at all, so there was no gradient for the meta-search algorithm to climb.
+
+Pairwise Comparisons
+Making pairwise comparisons and allowing the meta-search algorithm to simply compare the normalized optimal indviduals between two search algorithms proved to provide a better gradient. Since any change in the relative fitness of the optimal individuals was reflected in the fitness score of the NK-landscape, the meta-search had immediate feedback, not needing to cross plateaus of unchanging fitness.
+
+Algorithms
+Random Search simply generates random individuals and records their fitness until it runs out of evals. The individual found with highest fitness is deemed optimal.
+
+Climb Hill is a steepest ascent restarting hill climber. It starts from a random location, and at each time step it examines all of its neighbors and moves to neighbor with highest fitness. Should it find itself at a peak, a point at which all neighbors are downhill, then it starts over from a new random location. Note that this algorithm is vulnerable to plateaus, and will wander instead of restart.
+
+At each time step, Simulated Annealing (SA) picks a random neighbor. If that neighbor has a higher fitness than the current location, then SA moves to that location. If that neighbor has a lower or equal fitness, then SA still may move to that location, with probability determined by a 'cooling schedule'. Earlier in the run, SA is more likely to move downhill. SA does not restart.
+
+As implemented for this paper, Evolutionary Algorithm (EA) is a mu+lambda (mu=100, lambda=10) evolutionary algorithm, using linear ranking (s=2.0) stochastic universal sampling for both parent selection and survival selection.
+
+All algorithms are allowed 10000 fitness evaluations.
+
+
+Distributed Architecture
+Taking advantage of the parallelizable nature of evolutionary algorithms, this implementation used an asynchronous message queue (beanstalkd) and a web server (nginx) to distribute the workload across a small cluster of high performance hardware. Each of the four machines in the cluster has a quad-core processor and two CUDA compute cards. A worker node system was developed whereby the head node could place a job request for a particular search algorithm to be run against a particular NK landscape. This job request was put into the message queue, to be delivered to the next available worker node. When the worker node received the request, it first checked if it had a copy of the requested NK-landscape in a local cache. If not, the worker node used the index number of the NK-landscape to place a web request with the head node and download the data sufficient to recreate the NK-landscape and place it in the local cache. The use of the web based distribution channel was necessary because the representation of an NK-landscape can grow very large, and the chosen message queue has strict message size limits. For the results presented in this paper, the distributed system ran using 16 worker nodes utilizing the CPU cores, plus another 8 worker nodes running their fitness functions on the CUDA compute cards.
+
+Interestingly, the CUDA-based worker nodes did not outperform the CPU based worker nodes. The CUDA-based fitness evaluation is very fast, but moving the number of individuals that need evaluated needs to be high before the speed difference becomes apparent. The exception is the random search algorithm, which was rewritten for CUDA-based evaluation. Since each of the evaluations is independent, all evaluations can happen in parallel.
+
+
+
+Results
+
+Four graphs for the One vs All approach showing fitness and k of the best individual at that time
+
+fitness on the left, BOLD the mindiff line, k on the right, dotted line
+
+
+Set the graphs up to show the minimums thing
+EA vs all
+SA vs all
+CH vs all
+RA vs all
+
+Four graphs, each with three lines, for the pairwise results, showing fitness
+EA over SA, CH, RA
+SA over EA, CH, RA
+CH over EA, SA, RA
+RA over EA, SA, CH
+
+
+Discussion
+
+
+
+
+THINGS THAT NEED LOGGED TO MAKE GRAPHS:
+At each EA eval, I need the comparative fitness (4 numbers) and k of the best landscape in the population.

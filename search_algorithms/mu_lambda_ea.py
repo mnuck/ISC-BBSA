@@ -2,20 +2,35 @@
 #
 # BBSA Auto-Benchmark
 
+import json
 import random
+import logging
 
 worst_ever = None
 
 
-def make_cycle(child_maker, parent_selector, survivor_selector, noise):
+def analyze_nk_population(population, state):
+    best = max(population, key=lambda x: x.fitness)
+    payload = {'bbsa': state['solverID'],
+               'id': best.nkID,
+               'fitness': best.fitness,
+               'k': best.k,
+               'performs': best.performs,
+               'evals': state['evals']}
+    logging.info(json.dumps(payload))
+
+
+def make_cycle(child_maker, parent_selector, survivor_selector, noise,
+               state_updater=lambda a, b: {}):
     def cycle(population, state):
         parents = parent_selector(population)
         children = child_maker(parents)
         population.extend(children)
         state['evals'] += len(children)
         if noise:
-            print state
+            analyze_nk_population(population, state)
         population = survivor_selector(population)
+        state.update(state_updater(population, state))
         return population, state
     return cycle
 
@@ -68,7 +83,7 @@ def make_EA_solver(make_initial_population,
     def solver():
         global worst_ever
         state = make_initial_state()
-        print "starting an EA cycle", state
+        logging.info("starting an EA cycle")
         population = make_initial_population()
         worst_ever = min([fitness(x) for x in population])
         while not terminate(state):

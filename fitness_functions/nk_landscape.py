@@ -102,17 +102,10 @@ class fitness_nk_landscape(object):
         result = 0
         # if hasattr(self, 'cuda_fitness'):
         #     return self.cuda_fitness([individual])
-        try:
-            for neighbors, subfunc in zip(self.neighborses, self.subfuncs):
-                key = tuple(individual[i] for i in neighbors)
-                result += subfunc[key]
-            individual.fitness = result
-        except KeyError:
-            print "boom"
-            print key
-            print individual
-            print len(individual)
-            exit()
+        for neighbors, subfunc in zip(self.neighborses, self.subfuncs):
+            key = tuple(individual[i] for i in neighbors)
+            result += subfunc[key]
+        individual.fitness = result
         return result
 
     def dumps(self):
