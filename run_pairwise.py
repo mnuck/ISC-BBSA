@@ -36,9 +36,9 @@ ea_lam = 10
 inner_runs = 10
 inner_max_evals = 10000
 
-fit_mu = 100
-fit_lam = 10
-outer_max_evals = 1000
+fit_mu = 30
+fit_lam = 6
+outer_max_evals = 500
 
 output_file = "the_winners.txt"
 if len(sys.argv) == 2:
@@ -232,7 +232,7 @@ def for_a_size(x):
             f.write("-----------------------------------------\n")
             f.write("Best NK-Landscape for %s over %s\n" %
                     tuple([x.name for x in pair]))
-            f.write("Fitness: %f\n" % SA_best.fitness)
+            f.write("Fitness: %f\n" % best.fitness)
             f.write("%s\n" % best)
             f.write("%s\n" % best.neighborses)
             f.write("%s\n" % best.subfuncs)
