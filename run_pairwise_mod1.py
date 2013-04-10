@@ -5,7 +5,7 @@
 import logging
 logformat = '%(asctime)s:%(levelname)s:%(message)s'
 loglevel = logging.INFO
-logging.basicConfig(filename='spewlog.log', format=logformat, level=loglevel)
+logging.basicConfig(filename='pairlog.log', format=logformat, level=loglevel)
 
 import sys
 import json
@@ -39,7 +39,7 @@ fit_mu = 10   # 20
 fit_lam = 2   # 5
 outer_max_evals = 100
 
-output_file = "ISC.txt"
+output_file = "ISCpairs.txt"
 if len(sys.argv) == 2:
     output_file = sys.argv[1]
 print "using output file", output_file
@@ -199,12 +199,8 @@ def distributed_fit_fit(fitness_function, makers, index):
     return fitness_function.fitness
 
 
-def do_eet(index):
+def do_eet(index, makers):
     global distributed
-    makers = [inner_wrapped_make_EA,
-              inner_wrapped_make_SA,
-              inner_wrapped_make_CH,
-              inner_wrapped_make_RA]
     if distributed:
         outer_fit = lambda x: distributed_fit_fit(x, makers, index)
     else:
@@ -216,7 +212,8 @@ def do_eet(index):
         parent_selector=selector(fit_lam),
         make_initial_state=lambda: {'evals': 0,
                                     'max_evals': outer_max_evals,
-                                    'solverID': makers[index].name},
+                                    'solverID': makers[index].name,
+                                    'loser': makers[1].name},
         fitness=outer_fit,
         noise=True, return_best=True)
     return outer_ea()
@@ -225,39 +222,24 @@ def do_eet(index):
 def for_a_size(x):
     global genome_length
     genome_length = x
-    EA_best = do_eet(0)
-    SA_best = do_eet(1)
-    CH_best = do_eet(2)
-    RA_best = do_eet(3)
+
+    makers = [inner_wrapped_make_EA,
+              inner_wrapped_make_SA,
+              inner_wrapped_make_CH,
+              inner_wrapped_make_RA]
 
     f = open(output_file, 'a')
-    f.write("-----------------------------------------\n")
-    f.write("Best NK-Landscape for Simulated Annealing %i\n" % genome_length)
-    f.write("Fitness: %f\n" % SA_best.fitness)
-    f.write("%s\n" % SA_best)
-    f.write("%s\n" % SA_best.neighborses)
-    f.write("%s\n" % SA_best.subfuncs)
-
-    f.write("-----------------------------------------\n")
-    f.write("Best NK-Landscape for Mu Lambda EA %i\n" % genome_length)
-    f.write("Fitness: %f\n" % EA_best.fitness)
-    f.write("%s\n" % EA_best)
-    f.write("%s\n" % EA_best.neighborses)
-    f.write("%s\n" % EA_best.subfuncs)
-
-    f.write("-----------------------------------------\n")
-    f.write("Best NK-Landscape for Hill Climber %i\n" % genome_length)
-    f.write("Fitness: %f\n" % CH_best.fitness)
-    f.write("%s\n" % CH_best)
-    f.write("%s\n" % CH_best.neighborses)
-    f.write("%s\n" % CH_best.subfuncs)
-
-    f.write("-----------------------------------------\n")
-    f.write("Best NK-Landscape for Random Search %i\n" % genome_length)
-    f.write("Fitness: %f\n" % RA_best.fitness)
-    f.write("%s\n" % RA_best)
-    f.write("%s\n" % RA_best.neighborses)
-    f.write("%s\n" % RA_best.subfuncs)
+    for pair in product(makers, makers):
+        if pair[0].name != pair[1].name:
+            best = do_eet(0, pair)
+            f.write("-----------------------------------------\n")
+            f.write("Best NK-Landscape for %s over %s\n" %
+                    tuple([x.name for x in pair]))
+            f.write("Fitness: %f\n" % best.fitness)
+            f.write("%s\n" % best)
+            f.write("%s\n" % best.neighborses)
+            f.write("%s\n" % best.subfuncs)
+            f.flush()
     f.close()
 
 
