@@ -10,6 +10,8 @@ worst_ever = None
 
 
 def analyze_nk_population(population, state):
+    for p in population:
+        print p.nkID, p.fitness
     best = max(population, key=lambda x: x.fitness)
     payload = {'bbsa': state['solverID'],
                'id': best.nkID,
@@ -17,6 +19,9 @@ def analyze_nk_population(population, state):
                'k': best.k,
                'performs': best.performs,
                'evals': state['evals']}
+    if 'loser' in state:
+      payload.update({'loser': state['loser']})
+
     logging.info(json.dumps(payload))
 
 
@@ -27,9 +32,9 @@ def make_cycle(child_maker, parent_selector, survivor_selector, noise,
         children = child_maker(parents)
         population.extend(children)
         state['evals'] += len(children)
+        population = survivor_selector(population)
         if noise:
             analyze_nk_population(population, state)
-        population = survivor_selector(population)
         state.update(state_updater(population, state))
         return population, state
     return cycle
@@ -83,8 +88,8 @@ def make_EA_solver(make_initial_population,
     def solver():
         global worst_ever
         state = make_initial_state()
-        logging.info("starting an EA cycle")
         population = make_initial_population()
+        state['evals'] += len(population)
         worst_ever = min([fitness(x) for x in population])
         while not terminate(state):
             population, state = cycle(population, state)

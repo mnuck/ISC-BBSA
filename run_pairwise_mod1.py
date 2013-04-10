@@ -12,6 +12,8 @@ import json
 from urllib2 import urlopen
 import beanstalkc
 
+from itertools import product
+
 from utility import statistics
 
 from representations.bit_string import bit_string

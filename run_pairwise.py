@@ -5,7 +5,7 @@
 import logging
 logformat = '%(asctime)s:%(levelname)s:%(message)s'
 loglevel = logging.WARNING
-logging.basicConfig(format=logformat, level=loglevel)
+logging.basicConfig(filename='pairlog.log', format=logformat, level=loglevel)
 
 import sys
 import json
@@ -40,7 +40,7 @@ fit_mu = 30
 fit_lam = 6
 outer_max_evals = 500
 
-output_file = "the_winners.txt"
+output_file = "pairwinners.txt"
 if len(sys.argv) == 2:
     output_file = sys.argv[1]
 print "using output file", output_file
@@ -210,7 +210,10 @@ def do_eet(index, makers):
         make_initial_population=initial_fits,
         survival_selector=selector(fit_mu),
         parent_selector=selector(fit_lam),
-        make_initial_state=lambda: {'evals': 0, 'max_evals': outer_max_evals},
+        make_initial_state=lambda: {'evals': 0,
+                                    'max_evals': outer_max_evals,
+                                    'solverID': makers[index].name,
+                                    'loser': makers[1].name},
         fitness=outer_fit,
         noise=True, return_best=True)
     return outer_ea()
